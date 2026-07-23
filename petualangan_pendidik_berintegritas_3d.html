@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Petualangan Praktisi Pendidikan Berintegritas 3D</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #0c0e12; 
+            font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; 
+            color: white; 
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none; 
+            user-select: none;
+        }
+        canvas { 
+            display: block; 
+            width: 100vw; 
+            height: 100vh; 
+        }
+        
+        #ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between;
+            z-index: 10;
+        }
+        
+        #hud { 
+            padding: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            pointer-events: auto;
+            width: 100%;
+        }
+        .stat-box { 
+            background: rgba(15, 23, 42, 0.85); 
+            backdrop-filter: blur(12px); 
+            border-radius: 16px; 
+            padding: 12px 20px; 
+            border: 1px solid rgba(255, 255, 255, 0.15); 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+        }
+        .stat-icon { width: 32px; height: 32px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));}
+        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; font-weight: 600;}
+        .stat-value { font-size: 26px; font-weight: 800; color: #f8fafc; }
+
+        #level-progress-container { width: 320px; display: flex; flex-direction: column; gap: 8px;}
+        #level-text { font-weight: 700; color: #f8fafc; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-size: 13px;}
+        #progress-bar-bg { width: 100%; height: 10px; background: rgba(15, 23, 42, 0.8); border-radius: 5px; border: 1px solid rgba(255,255,255,0.15); overflow: hidden; position: relative;}
+        #progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #38bdf8, #818cf8); border-radius: 5px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.8); transition: width 0.4s ease;}
+
+        /* Audio Controls Custom Styling */
+        .audio-btn {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 10px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: #f8fafc;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .audio-btn:hover {
+            background: rgba(30, 41, 59, 0.95);
+            border-color: #38bdf8;
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+        .audio-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .audio-btn.playing {
+            border-color: #4ade80;
+            color: #4ade80;
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
+        }
+
+        /* Controls Bantuan Keyboard */
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 10px 22px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            font-size: 13px;
+            color: #cbd5e1;
+            text-align: center;
+            pointer-events: auto;
+            white-space: nowrap;
+        }
+
+        #quiz-overlay { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(8, 10, 15, 0.88); 
+            backdrop-filter: blur(12px); 
+            display: none; 
+            justify-content: center; 
+            align-items: center; 
+            pointer-events: auto; 
+            opacity: 0; 
+            transition: opacity 0.3s ease; 
+            z-index: 100;
+            padding: 16px;
+        }
+        #quiz-overlay.active { display: flex; opacity: 1;}
+        #quiz-box { 
+            background: rgba(15, 23, 42, 0.95); 
+            width: 100%; 
+            max-width: 680px; 
+            padding: 30px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(129, 140, 248, 0.4); 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8); 
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #quiz-area-title { font-size: 13px; text-transform: uppercase; color: #38bdf8; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px;}
+        #quiz-question { font-size: 18px; font-weight: 700; line-height: 1.5; margin-bottom: 22px; color: #f8fafc;}
+        #options-container { display: flex; flex-direction: column; gap: 12px;}
+        .option-btn { 
+            background: rgba(30, 41, 59, 0.8); 
+            color: #f1f5f9; 
+            border: 1px solid rgba(148, 163, 184, 0.25); 
+            padding: 14px 18px; 
+            border-radius: 12px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            text-align: left; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px;
+            width: 100%;
+        }
+        .option-btn:hover { background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.6); transform: translateY(-2px);}
+        .option-btn .radio-dot { width: 16px; height: 16px; border: 2px solid rgba(148, 163, 184, 0.6); border-radius: 50%; display: inline-block; flex-shrink: 0;}
+        .option-btn.selected .radio-dot { background-color: #38bdf8; border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);}
+        #quiz-feedback { margin-top: 18px; font-size: 14px; font-weight: 600; min-height: 24px; opacity: 0; transition: opacity 0.3s ease; line-height: 1.4;}
+        #quiz-feedback.show { opacity: 1;}
+        #quiz-feedback.correct { color: #4ade80;}
+        #quiz-feedback.incorrect { color: #f87171;}
+
+        #finish-screen { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(135deg, rgba(8, 10, 15, 0.95), rgba(15, 23, 42, 0.98)); 
+            display: none; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            pointer-events: auto; 
+            z-index: 200; 
+            text-align: center; 
+            color: white;
+            padding: 20px;
+        }
+        #finish-screen.active { display: flex; }
+        #finish-icon { width: 100px; height: 100px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(74, 222, 128, 0.6));}
+        #finish-title { font-size: 36px; font-weight: 900; background: linear-gradient(135deg, #4ade80, #38bdf8); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 12px;}
+        #finish-subtitle { font-size: 16px; color: #94a3b8; margin-bottom: 25px; max-width: 600px; line-height: 1.6;}
+        .final-stat { font-size: 22px; font-weight: 700; color: #f8fafc; margin-bottom: 28px;}
+        #restart-btn { background: linear-gradient(135deg, #38bdf8, #818cf8); color: white; border: none; padding: 16px 40px; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 30px rgba(56, 189, 248, 0.4); transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px;}
+        #restart-btn:hover { box-shadow: 0 15px 40px rgba(56, 189, 248, 0.6); transform: translateY(-3px);}
+
+        /* Mobile Controls */
+        #mobile-controls { position: absolute; bottom: 25px; left: 25px; display: none; pointer-events: auto;}
+        .joystick-base { width: 110px; height: 110px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px); border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); display: flex; justify-content: center; align-items: center; position: relative; touch-action: none;}
+        .joystick-knob { width: 46px; height: 46px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.4); position: absolute; pointer-events: none;}
+
+        @media (max-width: 768px) {
+            #hud { padding: 12px; }
+            .stat-box { padding: 8px 12px; gap: 8px; }
+            .stat-icon { width: 24px; height: 24px; }
+            .stat-label { font-size: 9px; }
+            .stat-value { font-size: 20px; }
+            #level-progress-container { width: 150px; }
+            #level-text { font-size: 10px;}
+            #controls-hint { display: none; }
+            #mobile-controls { display: block; }
+            #quiz-box { padding: 20px; }
+            #quiz-question { font-size: 16px; }
+        }
+
+        /* Halaman Awal SIGMA */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(8, 10, 15, 0.96), rgba(15, 23, 42, 0.98));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 500;
+            text-align: center;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            opacity: 1;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        #start-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .start-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 28px;
+            padding: 36px 32px;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+        .badge-disdik {
+            background: linear-gradient(90deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            padding: 6px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+        .logo-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+        .logo-box {
+            width: 84px;
+            height: 84px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.1));
+            border: 2px solid rgba(56, 189, 248, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .logo-box:hover {
+            transform: scale(1.05);
+            border-color: #38bdf8;
+            box-shadow: 0 0 35px rgba(56, 189, 248, 0.4);
+        }
+        .logo-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .logo-box svg {
+            width: 52px;
+            height: 52px;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+        }
+        .change-logo-hint {
+            font-size: 10px;
+            color: #94a3b8;
+            margin-top: 6px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .change-logo-hint:hover {
+            color: #38bdf8;
+        }
+        .app-title-sigma {
+            font-size: 56px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #4ade80 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1;
+            margin: 4px 0;
+        }
+        .app-subtitle {
+            font-size: 15px;
+            font-weight: 700;
+            color: #cbd5e1;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .start-info-box {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+            width: 100%;
+        }
+        .start-info-box p {
+            margin: 0 0 8px 0;
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+        .start-info-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .start-info-box li {
+            margin-bottom: 4px;
+        }
+        .start-btn {
+            background: linear-gradient(135deg, #38bdf8, #6366f1);
+            color: white;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.4);
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+        .start-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(56, 189, 248, 0.6);
+        }
+
+        /* Error Fallback Banner */
+        #webgl-error-banner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 41, 59, 0.95);
+            border: 2px solid #ef4444;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+            max-width: 90%;
+            width: 420px;
+        }
+        #webgl-error-banner h2 { color: #f87171; margin-top: 0; }
+        #webgl-error-banner p { color: #cbd5e1; font-size: 14px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <!-- Halaman Awal Aplikasi SIGMA -->
+    <div id="start-screen">
+        <div class="start-card">
+            <div class="logo-wrapper">
+                <label for="custom-logo-input" class="logo-box" title="Klik untuk mengganti logo">
+                    <img id="custom-logo-preview" style="display: none;" alt="Logo Instansi">
+                    <svg id="default-logo-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z" fill="url(#logo-grad)" stroke="#38bdf8" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M12 6L7 9.5L12 13L17 9.5L12 6Z" fill="#ffffff"/>
+                        <path d="M9 11.5V14.5C9 15.5 10.34 16.5 12 16.5C13.66 16.5 15 15.5 15 14.5V11.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="logo-grad" x1="3" y1="2" x2="21" y2="23" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#0284c7"/>
+                                <stop offset="1" stop-color="#6366f1"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </label>
+                <input type="file" id="custom-logo-input" accept="image/*" style="display: none;">
+                <label for="custom-logo-input" class="change-logo-hint">📷 Klik logo untuk mengunggah logo sendiri</label>
+            </div>
+
+            <div class="badge-disdik">Dinas Pendidikan Kabupaten Majalengka</div>
+            <div class="app-title-sigma">SIGMA</div>
+            <div class="app-subtitle">Simulasi Game Melawan ANti Korupsi</div>
+            
+            <div class="start-info-box">
+                <p>Selamat Datang di Simulasi Edukasi Integritas Pendidik & Praktisi Pendidikan!</p>
+                <ul>
+                    <li><strong>10 Zona Integrity:</strong> Menjelajahi 50 tantangan etika, gratifikasi, pengadaan, seleksi PPDB, hingga tata kelola publik.</li>
+                    <li><strong>Navigasi 3D:</strong> Dekati setiap gerbang tantangan dan pilih opsi keputusan terbaik yang jujur & transparan.</li>
+                    <li><strong>Musik Terpasang (BGM Default):</strong> Musik latar instrumen SIGMA Theme sudah bawaan otomatis! Anda juga tetap dapat menggantinya dengan file MP3 pribadi jika mau.</li>
+                </ul>
+            </div>
+
+            <!-- Opsi Pilihan Audio di Halaman Awal -->
+            <div style="display: flex; gap: 12px; align-items: center; width: 100%; justify-content: center; margin-top: 4px;">
+                <label for="start-bgm-file" class="audio-btn" style="padding: 12px 20px; font-size: 13px; background: rgba(30, 41, 59, 0.8);">
+                    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 9l12-2M6 21a3 3 0 100-6 3 3 0 000 6zM18 19a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                    <span id="start-bgm-text">Musik Bawaan Aktif (Atau Pilih MP3 Anda)</span>
+                </label>
+                <input type="file" id="start-bgm-file" accept="audio/*" style="display: none;">
+            </div>
+
+            <button id="start-game-btn" class="start-btn">Mulai Petualangan</button>
+        </div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="hud">
+            <div id="level-progress-container">
+                <div id="level-text">ZONA 1: GRATIFIKASI & ETIKA HADIAH (1/25)</div>
+                <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+            </div>
+
+            <!-- Audio Controller & Stat Box -->
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                <button id="exit-btn" class="audio-btn" style="border-color: rgba(248, 113, 113, 0.4); color: #f87171;" title="Keluar dari Permainan">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>Keluar</span>
+                </button>
+
+                <label for="hud-bgm-file" class="audio-btn" title="Unggah Musik MP3/WAV Sendiri">
+                    <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 9l12-2M6 21a3 3 0 100-6 3 3 0 000 6zM18 19a3 3 0 100-6 3 3 0 000 6z"/></svg>
+                    <span id="hud-bgm-label">SIGMA Theme</span>
+                </label>
+                <input type="file" id="hud-bgm-file" accept="audio/*" style="display: none;">
+
+                <button id="bgm-toggle-btn" class="audio-btn" title="Putar/Hentikan Musik">
+                    <svg id="bgm-icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor"/></svg>
+                    <svg id="bgm-icon-pause" viewBox="0 0 24 24" style="display:none;"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>
+                    <span id="bgm-status-text">Pause</span>
+                </button>
+
+                <div class="stat-box">
+                    <svg class="stat-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#FBBF24" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <div>
+                        <div class="stat-label">Skor Integritas</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls-hint">Gunakan [W, A, S, D] atau Tombol Panah untuk bergerak mendekati Gerbang</div>
+        
+        <div id="mobile-controls">
+            <div class="joystick-base" id="joystick-base">
+                <div class="joystick-knob" id="joystick-knob"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="quiz-overlay">
+        <div id="quiz-box">
+            <div id="quiz-area-title">ZONA PRAKTISI PENDIDIKAN BERINTEGRITAS</div>
+            <div id="quiz-question-num" style="font-size: 12px; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">GERBANG 1 DARI 25</div>
+            <div id="quiz-question">Pertanyaan seputar etika tata kelola pendidikan...</div>
+            <div id="options-container"></div>
+            <div id="quiz-feedback"></div>
+        </div>
+    </div>
+
+    <div id="finish-screen">
+        <svg id="finish-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 11.08V12A10 10 0 1 1 18.35 5.06" stroke="#4ADE80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 4L12 14.01L9 11.01" stroke="#4ADE80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div id="finish-title">PRAKTISI PENDIDIKAN TELADAN!</div>
+        <div id="finish-subtitle">Selamat! Anda telah membuktikan komitmen tinggi menjunjung integritas, menolak gratifikasi, transparan dalam anggaran, serta adil dan objektif dalam tata kelola pendidikan!</div>
+        <div class="final-stat">Total Skor Integritas: <span id="final-score">0</span> PTS</div>
+        <button id="restart-btn">MAIN LAGI</button>
+    </div>
+
+    <div id="exit-modal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8, 10, 15, 0.88); backdrop-filter: blur(12px); display: none; justify-content: center; align-items: center; z-index: 300; pointer-events: auto; padding: 20px;">
+        <div style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(248, 113, 113, 0.4); border-radius: 24px; padding: 32px; max-width: 440px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 16px auto; display: block;">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <h3 style="margin: 0 0 12px 0; font-size: 22px; font-weight: 800; color: #f8fafc;">Keluar dari Permainan?</h3>
+            <p style="margin: 0 0 24px 0; font-size: 14px; color: #94a3b8; line-height: 1.5;">Seluruh kemajuan simulasi dan skor Anda saat ini akan di-reset. Apakah Anda yakin ingin kembali ke halaman utama?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button id="cancel-exit-btn" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.2); color: #f8fafc; padding: 12px 24px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;">Batal</button>
+                <button id="confirm-exit-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626); border: none; color: white; padding: 12px 28px; border-radius: 50px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); transition: all 0.2s ease;">Ya, Keluar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="webgl-error-banner">
+        <h2>Atensi Grafis WebGL</h2>
+        <p>Browser Anda atau akselerasi perangkat keras tidak mendukung WebGL. Harap aktifkan WebGL di browser Anda untuk menjalankan simulasi 3D ini.</p>
+    </div>
+
+    <!-- HTML5 Audio Element for Background Music -->
+    <audio id="bgm-player" loop></audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        let bgmPlayer = null;
+        let isBgmPlaying = false;
+        let isCustomBgm = false;
+
+        /* Synthesizer BGM Bawaan (Built-in Audio Synthesizer) */
+        let isSynthBgmActive = false;
+        let synthBgmInterval = null;
+        let synthStep = 0;
+
+        const synthMelody = [
+            261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 440.00, 523.25,
+            349.23, 440.00, 523.25, 659.25, 523.25, 392.00, 329.63, 293.66,
+            329.63, 392.00, 523.25, 659.25, 523.25, 440.00, 392.00, 329.63,
+            293.66, 349.23, 440.00, 523.25, 440.00, 392.00, 329.63, 261.63
+        ];
+        const synthBass = [
+            130.81, 130.81, 164.81, 164.81, 174.61, 174.61, 196.00, 196.00,
+            130.81, 130.81, 174.61, 174.61, 196.00, 196.00, 130.81, 130.81
+        ];
+
+        function playSynthNote(freq, type, duration, gainVal, time) {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            try {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, time);
+                gain.gain.setValueAtTime(gainVal, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(time);
+                osc.stop(time + duration);
+            } catch (e) {
+                console.warn("Synth note error:", e);
+            }
+        }
+
+        function startBuiltInBGM() {
+            if (isSynthBgmActive || isCustomBgm) return;
+            const ctx = getAudioContext();
+            if (!ctx) return;
+            
+            isSynthBgmActive = true;
+            isBgmPlaying = true;
+            synthStep = 0;
+            updateBgmUI(true);
+
+            synthBgmInterval = setInterval(() => {
+                if (!isSynthBgmActive || isCustomBgm) return;
+                const now = ctx.currentTime;
+                
+                // Melody note (Tone lembut)
+                const melFreq = synthMelody[synthStep % synthMelody.length];
+                if (melFreq) {
+                    playSynthNote(melFreq, 'triangle', 0.22, 0.05, now);
+                }
+                
+                // Bass line
+                if (synthStep % 2 === 0) {
+                    const bassFreq = synthBass[Math.floor(synthStep / 2) % synthBass.length];
+                    if (bassFreq) {
+                        playSynthNote(bassFreq, 'sine', 0.35, 0.08, now);
+                    }
+                }
+                
+                synthStep++;
+            }, 210);
+        }
+
+        function stopBuiltInBGM() {
+            isSynthBgmActive = false;
+            if (synthBgmInterval) {
+                clearInterval(synthBgmInterval);
+                synthBgmInterval = null;
+            }
+        }
+
+        function setupAudioSystem() {
+            bgmPlayer = document.getElementById('bgm-player');
+            bgmPlayer.volume = 0.5;
+
+            const startFileInput = document.getElementById('start-bgm-file');
+            const hudFileInput = document.getElementById('hud-bgm-file');
+            const toggleBtn = document.getElementById('bgm-toggle-btn');
+
+            const handleFileSelect = (file) => {
+                if (!file) return;
+                stopBuiltInBGM();
+                isCustomBgm = true;
+
+                const audioURL = URL.createObjectURL(file);
+                bgmPlayer.src = audioURL;
+                
+                const trackName = file.name.length > 18 ? file.name.substring(0, 15) + '...' : file.name;
+                document.getElementById('start-bgm-text').innerText = "🎵 " + trackName;
+                document.getElementById('hud-bgm-label').innerText = trackName;
+
+                playBGM();
+            };
+
+            if (startFileInput) {
+                startFileInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]);
+                });
+            }
+
+            if (hudFileInput) {
+                hudFileInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) handleFileSelect(e.target.files[0]);
+                });
+            }
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    if (isBgmPlaying) {
+                        pauseBGM();
+                    } else {
+                        playBGM();
+                    }
+                });
+            }
+        }
+
+        function playBGM() {
+            getAudioContext();
+            if (isCustomBgm && bgmPlayer && bgmPlayer.src) {
+                bgmPlayer.play().then(() => {
+                    isBgmPlaying = true;
+                    updateBgmUI(true);
+                }).catch(err => {
+                    console.warn("Custom BGM Auto-play diblokir:", err);
+                });
+            } else {
+                startBuiltInBGM();
+            }
+        }
+
+        function pauseBGM() {
+            if (isCustomBgm && bgmPlayer) {
+                bgmPlayer.pause();
+            } else {
+                stopBuiltInBGM();
+            }
+            isBgmPlaying = false;
+            updateBgmUI(false);
+        }
+
+        function updateBgmUI(playing) {
+            const toggleBtn = document.getElementById('bgm-toggle-btn');
+            const iconPlay = document.getElementById('bgm-icon-play');
+            const iconPause = document.getElementById('bgm-icon-pause');
+            const statusText = document.getElementById('bgm-status-text');
+
+            if (playing) {
+                if (iconPlay) iconPlay.style.display = 'none';
+                if (iconPause) iconPause.style.display = 'block';
+                if (statusText) statusText.innerText = 'Pause';
+                if (toggleBtn) toggleBtn.classList.add('playing');
+            } else {
+                if (iconPlay) iconPlay.style.display = 'block';
+                if (iconPause) iconPause.style.display = 'none';
+                if (statusText) statusText.innerText = 'Play';
+                if (toggleBtn) toggleBtn.classList.remove('playing');
+            }
+        }
+
+        /* Web Audio Synthesizer for SFX */
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'incorrect') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now); // A3
+                    osc.frequency.setValueAtTime(164.81, now + 0.15); // E3
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'star') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'victory') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.15);
+                    osc.frequency.setValueAtTime(783.99, now + 0.3);
+                    osc.frequency.setValueAtTime(1046.50, now + 0.45);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+            } catch (e) {
+                console.warn('Audio playback error:', e);
+            }
+        }
+
+        const quizData = [
+            {
+                level: 1,
+                area: "ZONA 1: GRATIFIKASI & ETIKA HADIAH",
+                questions: [
+                    {
+                        question: "1. Seorang vendor pengadaan buku/alat peraga menawarkan komisi pribadi (cashback) 10% ke rekening Anda jika menyetujui kontrak mereka. Sikap Anda?",
+                        options: [
+                            "Menerima komisi karena menganggapnya sebagai bentuk apresiasi kerja sama",
+                            "Menolak keras komisi pribadi dan melaporkan penawaran tersebut ke Tim Pencegahan Korupsi / Pengadaan",
+                            "Menerima uang tersebut lalu menyimpannya di dalam kas rahasia sekolah",
+                            "Meminta vendor menambah jumlah komisinya menjadi 20% agar bisa dibagi dengan staf lain"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Komisi pribadi dari vendor adalah bentuk gratifikasi terlarang yang merusak transparansi pengadaan publik."
+                    },
+                    {
+                        question: "2. Jelang pembagian rapor, seorang wali murid memberikan hadiah jam tangan mewah kepada Anda sebagai ucapan terima kasih. Tindakan Anda?",
+                        options: [
+                            "Menerima hadiah tersebut dengan senang hati karena diberikan secara sukarela",
+                            "Menolak hadiah tersebut secara sopan dan menjelaskan aturan netralitas serta batasan gratifikasi pendidik",
+                            "Menerima jam tangan tersebut namun berjanji tidak akan memberitahu guru lain",
+                            "Meminta wali murid mengganti hadiah jam tangan dengan uang tunai untuk operasional kelas"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Menolak pemberian bernilai dari pemangku kepentingan menjaga objektivitas dan integritas profesi pendidik."
+                    },
+                    {
+                        question: "3. Dalam pengurusan dokumen alumni, seorang oknum staf meminta 'uang lelah' tambahan di luar tarif resmi yang tertera. Sikap Anda?",
+                        options: [
+                            "Mendukung praktik tersebut karena gaji staf dianggap masih kurang",
+                            "Menolak segala bentuk pungutan liar (pungli) dan memastikan seluruh pelayanan publik bebas biaya tak resmi",
+                            "Pura-pura tidak tahu selama alumni tersebut mau membayar tanpa komplain",
+                            "Mengambil bagian 50% dari uang lelah tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Pelayanan publik di sektor pendidikan harus bersih dari segala bentuk pungutan liar (pungli)."
+                    },
+                    {
+                        question: "4. Perusahaan swasta menawarkan sponsorship kegiatan sekolah dengan syarat penilaian akreditasi internal sekolah diubah menjadi sempurna. Tindakan Anda?",
+                        options: [
+                            "Menyetujui syarat tersebut demi mendapatkan dana sponsor kegiatan murid",
+                            "Menolak sponsorship yang mengintervensi atau merusak keabsahan evaluasi/akreditasi pendidikan",
+                            "Menerima dana sponsor dan memalsukan seluruh data akreditasi sekolah",
+                            "Menegosiasikan syarat agar akreditasi dinaikkan sedikit saja"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Kemitraan sponsor tidak boleh mengorbankan kejujuran evaluasi dan standar kualitas pendidikan."
+                    },
+                    {
+                        question: "5. Anda menerima bingkisan makanan segar yang tidak tahan lama dari siswa saat perpisahan. Apa langkah terbaik sesuai etika?",
+                        options: [
+                            "Membuang bingkisan tersebut di depan siswa",
+                            "Mencatat dan melaporkannya/menikmatinya bersama seluruh staf/siswa lain secara terbuka agar tidak ada konflik kepentingan",
+                            "Menjual kembali makanan tersebut kepada siswa lain untuk mencari keuntungan",
+                            "Menyimpan makanan di ruang pribadi dan melarang siapa saja menyentuhnya"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Pemberian makanan konsumsi langsung yang cepat rusak dapat dikelola secara terbuka bersama demi azas transparansi."
+                    }
+                ]
+            },
+            {
+                level: 2,
+                area: "ZONA 2: PENGELOLAAN ANGGARAN & TRANSPARANSI KEUANGAN",
+                questions: [
+                    {
+                        question: "1. Atasan meminta Anda membuat kuitansi fiktif (markup biaya) untuk menutupi sisa anggaran operasional akhir tahun. Sikap Anda?",
+                        options: [
+                            "Langsung menuruti instruksi atasan demi kelancaran laporan operasional",
+                            "Menolak pembuatan kuitansi fiktif dan melaporkan realisasi keuangan secara riil dan transparan",
+                            "Membuat kuitansi palsu tetapi mengambil potongan 10% untuk biaya risiko",
+                            "Menyuruh staf paling baru untuk membuat kuitansi palsu tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Pemalsuan dokumen dan markup anggaran adalah tindakan manipulasi yang melanggar hukum dan etika."
+                    },
+                    {
+                        question: "2. Pengadaan sarana komputer sekolah bernilai besar hendak dilakukan tanpa proses survei harga resmi dan hanya menunjuk toko milik kerabat pimpinan. Sikap Anda?",
+                        options: [
+                            "Menyetujui penunjukan langsung tersebut agar proses lebih cepat selesai",
+                            "Mendorong proses pengadaan yang sesuai prosedur lelang/perbandingan harga independen secara terbuka",
+                            "Mengabaikan prosedur lelang selama komputer yang dibeli berfungsi",
+                            "Meminta bagian keuntungan dari toko kerabat pimpinan tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Pengadaan barang dan jasa wajib mematuhi akuntabilitas, transparansi, dan persaingan sehat."
+                    },
+                    {
+                        question: "3. Anda menemukan selisih dana kas operasional sekolah yang tidak dapat dipertanggungjawabkan saat audit internal. Langkah Anda?",
+                        options: [
+                            "Menutupi selisih tersebut dengan mengambil dana bantuan siswa miskin",
+                            "Melaporkan temuan selisih anggaran tersebut secara objektif kepada tim verifikasi/pimpinan",
+                            "Membiarkan selisih tersebut hingga tidak ada orang yang menyadarinya",
+                            "Ubah angka-angka di pembukuan agar kas terlihat pas"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Kejujuran dalam pelaporan audit kas menjamin transparansi pengelolaan keuangan lembaga."
+                    },
+                    {
+                        question: "4. Laporan Pertanggungjawaban (LPJ) keuangan sekolah akan dipublikasikan kepada orang tua murid dan publik. Sikap Anda?",
+                        options: [
+                            "Menyembunyikan LPJ agar publik tidak banyak bertanya mengenai pengeluaran",
+                            "Mendukung transparansi LPJ secara terbuka sesuai prinsip akuntabilitas publik",
+                            "Hanya menampilkan pengeluaran yang bagus dan menyembunyikan biaya yang mencurigakan",
+                            "Mengenakan tarif bayaran bagi warga yang ingin membaca LPJ"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Transparansi publik meningkatkan kepercayaan masyarakat terhadap institusi pendidikan."
+                    },
+                    {
+                        question: "5. Bendahara menggunakan sementara kas operasional sekolah untuk keperluan mendesak keluarga dan berjanji mengembalikannya besok. Tindakan Anda?",
+                        options: [
+                            "Membiarkannya karena bendahara adalah teman dekat Anda",
+                            "Mengingatkan bendahara bahwa penggunaan kas instansi untuk kepentingan pribadi adalah pelanggaran berat",
+                            "Ikut meminjam kas sekolah untuk kepentingan pribadi Anda juga",
+                            "Pura-pura tidak melihat penyalahgunaan kas tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Keuangan negara/instansi tidak boleh disalahgunakan untuk keperluan pribadi dalam bentuk apapun."
+                    }
+                ]
+            },
+            {
+                level: 3,
+                area: "ZONA 3: SELEKSI, PPDB & PENERIMAAN PESERTA DIDIK",
+                questions: [
+                    {
+                        question: "1. Seorang tokoh masyarakat meminta panitia PPDB meloloskan anaknya yang nilainya berada di bawah batas kualifikasi kelulusan. Sikap Anda?",
+                        options: [
+                            "Langsung meloloskannya demi menjaga hubungan baik dan posisi aman Anda",
+                            "Menolak intervensi dan memproses seleksi peserta didik secara adil, objektif, dan transparan sesuai aturan",
+                            "Meloloskannya dengan syarat orang tua tersebut memberikan sumbangan besar",
+                            "Menggeser posisi calon siswa berprestasi agar anak pejabat tersebut masuk"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Keadilan dalam seleksi PPDB menjamin hak yang sama bagi seluruh calon siswa tanpa nepotisme."
+                    },
+                    {
+                        question: "2. Ada pendaftar yang menawarkan bantuan sumbangan fasilitas sekolah jika diloloskan melalui jalur khusus yang tidak ada regulasinya. Sikap Anda?",
+                        options: [
+                            "Menerima tawaran tersebut karena sekolah memang sedang membutuhkan fasilitas baru",
+                            "Menolak bentuk jual-beli kursi penerimaan dan konsisten pada mekanisme regulasi resmi",
+                            "Menerima sumbangan tersebut dan merahasiakannya dari kepanitiaan lain",
+                            "Meminta nilai sumbangan dinaikkan dua kali lipat"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Praktek jual beli kursi melanggar prinsip keadilan dan integritas tata kelola pendidikan."
+                    },
+                    {
+                        question: "3. Panitia menemukan calon siswa melampirkan sertifikat prestasi/Kartu Keluarga (KK) yang diindikasikan palsu demi poin afirmasi. Langkah Anda?",
+                        options: [
+                            "Pura-pura tidak tahu dan tetap memproses dokumen tersebut",
+                            "Melakukan verifikasi faktual dan membatalkan keikutsertaan jika terbukti ada pemalsuan dokumen",
+                            "Membantu memperbaiki dokumen palsu tersebut agar terlihat asli",
+                            "Meminta imbalan uang dari pendaftar agar dokumen palsu dimaklumi"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Pembatalan dokumen fiktif menjaga keabsahan serta hak peserta lain yang jujur."
+                    },
+                    {
+                        question: "4. Anda diminta memberikan bocoran kunci jawaban ujian masuk/seleksi kepada anak kolega pimpinan sekolah. Tindakan Anda?",
+                        options: [
+                            "Memberikan bocoran jawaban melalui pesan singkat rahasia",
+                            "Menolak memberikan bocoran soal/jawaban demi menjaga kerahasiaan dan kejujuran seleksi",
+                            "Memberikan sebagian soal saja agar tidak terlalu mencolok",
+                            "Menjual soal seleksi tersebut kepada seluruh peserta kuis"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Menjaga kerahasiaan dokumen ujian adalah fondasi penting objektivitas seleksi akademik."
+                    },
+                    {
+                        question: "5. Terdapat sisa kuota penerimaan jalur siswa kurang mampu (afirmasi). Ada desakan mengalihkan sisa kuota ke pendaftar reguler non-afirmasi secara ilegal. Sikap Anda?",
+                        options: [
+                            "Mengalihkan kuota secara sepihak tanpa mekanisme aturan yang berlaku",
+                            "Memastikan pengelolaan sisa kuota diproses secara resmi sesuai aturan petunjuk teknis (Juknis) PPDB",
+                            "Menjual sisa kuota tersebut kepada peserta pendaftar dengan harga tinggi",
+                            "Membagi sisa kuota khusus untuk keluarga panitia PPDB saja"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Semua pengalihan kuota wajib mengacu pada regulasi Juknis resmi yang terbuka dan akuntabel."
+                    }
+                ]
+            },
+            {
+                level: 4,
+                area: "ZONA 4: INTEGRITAS AKADEMIK & TATA KELOLA PROFESI",
+                questions: [
+                    {
+                        question: "1. Rekan pendidik senior meminta namanya dicantumkan sebagai penulis utama dalam karya ilmiah yang 100% dibuat oleh Anda. Tindakan Anda?",
+                        options: [
+                            "Memberikannya begitu saja karena merasa takut dengan senioritas atasan",
+                            "Menjelaskan etika kepenulisan (authorship) secara sopan dan hanya mencantumkan nama kontributor aktif riil",
+                            "Menghapus nama Anda sendiri dan menggantinya penuh dengan nama senior",
+                            "Menjual karya ilmiah tersebut ke pihak luar tanpa mencantumkan siapapun"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Integritas akademik menuntut pengakuan hak cipta dan kontribusi ilmiah secara jujur."
+                    },
+                    {
+                        question: "2. Anda menemukan indikasi bahwa modul dan bahan ajar instansi memuat hasil plagiarisme karya penulis lain tanpa sitasi. Langkah Anda?",
+                        options: [
+                            "Membiarkannya karena menganggap plagiarisme adalah hal biasa di dunia pendidikan",
+                            "Melaporkan dan merevisi bahan ajar agar mencantumkan sumber sitasi yang sah sesuai kaidah ilmiah",
+                            "Menyuruh staf menghapus nama penulis asli dan mengklaimnya milik sendiri",
+                            "Menjual bahan ajar plagiat tersebut secara komersial"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Menghindari plagiarisme adalah bentuk penghormatan terhadap karya intelektual dan etika akademisi."
+                    },
+                    {
+                        question: "3. Saat evaluasi/ujian, peserta didik ketahuan menggunakan joki atau AI secara manipulatif tanpa sitasi/izin. Sikap Anda?",
+                        options: [
+                            "Luluskan peserta didik tersebut karena hasil pengerjaannya terlihat sangat bagus",
+                            "Memberikan sanksi edukatif dan penilaian objektif sesuai standar aturan integritas akademik yang berlaku",
+                            "Pura-pura tidak melihat kejadian tersebut demi kelulusan 100%",
+                            "Membantu peserta lain menggunakan joki ujian serupa"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Penegakan aturan kejujuran dalam evaluasi membentuk karakter peserta didik yang berintegritas."
+                    },
+                    {
+                        question: "4. Tim persiapan akreditasi diminta merekayasa data jumlah lulusan yang terserap kerja agar nilai akreditasi naik. Sikap Anda?",
+                        options: [
+                            "Menyetujui rekayasa data demi gengsi dan reputasi nama sekolah",
+                            "Menolak manipulasi data dan menyajikan data statistik riil lulusan secara jujur",
+                            "Mengubah seluruh dokumen alumni menjadi status bekerja semua",
+                            "Menyuruh staf menghancurkan data alumni yang belum bekerja"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Kejujuran data akreditasi mencerminkan kualitas sejati pengelolaan lembaga pendidikan."
+                    },
+                    {
+                        question: "5. Seorang oknum menggunakan ijazah palsu saat mendaftar pendaftaran sertifikasi profesi pendidik. Tindakan Anda?",
+                        options: [
+                            "Membiarkan oknum tersebut lolos agar tidak menimbulkan kegaduhan",
+                            "Melaporkan indikasi ijazah palsu tersebut kepada verifikator/pihak berwenang sesuai ketentuan hukum",
+                            "Membantu oknum merekayasa data ijazah di pangkalan data resmi",
+                            "Mewajibkan oknum membayar uang pembungkam ke rekening Anda"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Penegakan keabsahan kualifikasi melindung martabat profesi pendidik dari tindak penipuan."
+                    }
+                ]
+            },
+            {
+                level: 5,
+                area: "ZONA 5: KONFLIK KEPENTINGAN & NEPOTISME",
+                questions: [
+                    {
+                        question: "1. Sekolah membutuhkan jasa catering untuk kegiatan nasional. Perusahaan catering milik pasangan Anda ikut dalam lelang tersebut. Sikap Anda?",
+                        options: [
+                            "Memangkan perusahaan pasangan Anda secara langsung tanpa lelang",
+                            "Deklarasikan konflik kepentingan (conflict of interest) dan menarik diri dari posisi panitia penilai lelang",
+                            "Mengintimidasi peserta lelang lain agar mundur dari kompetisi",
+                            "Menaikkan penawaran harga catering pasangan agar mendapat untung besar"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Deklarasi konflik kepentingan mencegah bias keputusan dan menjaga persaingan transparan."
+                    },
+                    {
+                        question: "2. Dalam rekrutmen pegawai/tenaga pendidik baru, adik kandung Anda mendaftar pada posisi yang Anda uji. Tindakan Anda?",
+                        options: [
+                            "Memberikan nilai tertinggi untuk adik Anda tanpa peduli hasil tesnya",
+                            "Melaporkan hubungan kekerabatan dan menyerahkan proses pengujian adik Anda kepada penguji independen lain",
+                            "Membocorkan soal tes wawancara hanya kepada adik Anda",
+                            "Menyalahkan peserta tes lain agar adik Anda otomatis menduduki peringkat satu"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Menghindari nepotisme memastikan proses seleksi menghasilkan SDM terbaik berdasar meritokrasi."
+                    },
+                    {
+                        question: "3. Pimpinan menunjuk langsung anaknya sebagai ketua proyek hibah penelitian tanpa evaluasi kompetensi internal. Sikap Anda?",
+                        options: [
+                            "Mendukung penuh karena tidak ingin berkonflik dengan pimpinan",
+                            "Menyampaikan masukan secara profesional agar penunjukan berbasis kualifikasi dan kompetensi terbuka",
+                            "Ikut menunjuk anggota keluarga Anda yang lain di proyek hibah tersebut",
+                            "Pura-pura setuju lalu merusak pelaksanaan proyek dari belakang"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Pengelolaan dana hibah penelitian harus berpatokan pada kapasitas kompetensi ilmiah, bukan kekeluargaan."
+                    },
+                    {
+                        question: "4. Anda memiliki saham di salah satu vendor workshop guru, dan diminta memilih vendor untuk pelatihan sekolah. Sikap Anda?",
+                        options: [
+                            "Langsung memilih vendor tempat Anda memiliki saham tanpa membandingkan penyedia lain",
+                            "Menginformasikan kepemilikan saham tersebut dan menyerahkan keputusan seleksi vendor kepada tim yang independen",
+                            "Memaksa seluruh guru untuk membeli paket workshop yang paling mahal dari vendor Anda",
+                            "Mengambil keuntungan dividen tanpa melaporkan kepemilikan saham"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Keterbukaan potensi konflik kepentingan menghindarkan penyalahgunaan wewenang untuk keuntungan pribadi."
+                    },
+                    {
+                        question: "5. Rekan kerja meminta Anda menghapus catatan ketidakhadirannya pada sistem presensi agar bonus kinerjanya tidak dipotong. Sikap Anda?",
+                        options: [
+                            "Menghapus catatan ketidakhadirannya karena merasa kasihan",
+                            "Menolak mengubah record presensi dan menegakkan disiplin administrasi secara fair dan setara",
+                            "Meminta imbalan 50% dari bonus kinerja rekan tersebut",
+                            "Menghapus catatan kehadiran seluruh staf agar adil"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Kedisiplinan dan kejujuran pelaporan presensi adalah cermin dasar integritas kerja praktisi pendidikan!"
+                    }
+                ]
+            },
+            {
+                level: 6,
+                area: "ZONA 6: ETIKA DIGITAL, FOTO & PRIVASI DATA SISWA",
+                questions: [
+                    {
+                        question: "1. Anda ingin mengunggah foto nilai/rapor siswa yang buruk ke media sosial pribadi sebagai bahan lelucon/konten. Sikap Anda?",
+                        options: [
+                            "Tetap mengunggahnya selama wajah siswa disensor sedikit",
+                            "Menolak mengunggah data pribadi/akademik siswa karena melanggar kerahasiaan dan privasi peserta didik",
+                            "Mengunggah foto rapor tersebut dan menyebutkan nama lengkap siswa",
+                            "Meminta bayaran kepada pengikut sosmed yang ingin melihat nama siswa tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Menjaga kerahasiaan data pribadi dan integritas ruang digital peserta didik adalah kewajiban hukum dan etika."
+                    },
+                    {
+                        question: "2. Laboratorium komputer sekolah membutuhkan perangkat lunak (software) pembelajaran. Rekan menyarankan memakai software bajakan ilegal. Sikap Anda?",
+                        options: [
+                            "Setuju memakai bajakan agar dapat menghemat anggaran sekolah",
+                            "Mengusulkan penggunaan software berlisensi resmi atau alternatif Open Source (gratis & legal)",
+                            "Membeli software bajakan di pasar gelap dan menandai kuitansinya sebagai barang asli",
+                            "Menjual aplikasi bajakan tersebut kepada seluruh siswa"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Menghargai Hak Kekayaan Intelektual (HKI) dengan menggunakan software legal/open-source menanamkan keteladanan kejujuran."
+                    },
+                    {
+                        question: "3. Pihak lembaga bimbingan belajar swasta meminta daftar nomor HP dan alamat siswa kurang mampu untuk promosi komersial. Sikap Anda?",
+                        options: [
+                            "Memberikan data kontak siswa demi mendapat komisi dari bimbel",
+                            "Menolak memberikan data kontak pribadi siswa tanpa persetujuan sah orang tua/wali",
+                            "Menjual data seluruh siswa sekolah kepada lembaga swasta tersebut",
+                            "Membagikan data pribadi siswa di forum publik"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Pelindungan data pribadi siswa dilindungi oleh regulasi dan wajib dijaga dari komersialisasi tanpa izin."
+                    },
+                    {
+                        question: "4. Komputer di ruang guru yang berisi akses akun penilaian/rapor digital sering ditinggalkan dalam kondisi 'login' tanpa sandi. Tindakan Anda?",
+                        options: [
+                            "Meninggalkannya begitu saja agar guru lain mudah memakai",
+                            "Mengingatkan rekan dan memastikan selalu melakukan 'logout' atau mengunci layar demi keamanan data nilai",
+                            "Memanfaatkan komputer terbuka tersebut untuk mengubah nilai siswa binaan Anda",
+                            "Membagikan password sistem penilaian ke grup pertemanan siswa"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Keamanan sistem informasi dan kredensial penilaian digital membutuhkan kedisiplinan akses setiap saat."
+                    },
+                    {
+                        question: "5. Anda menemukan draf soal ujian tersimpan di drive bersama yang dapat diakses publik oleh siswa. Langkah Anda?",
+                        options: [
+                            "Membiarkannya agar nilai rata-rata ujian siswa menjadi sangat tinggi",
+                            "Segera memindahkan draf soal ke folder aman berakses terbatas dan mengganti materi soal jika sudah bocor",
+                            "Menjual akses drive berisi kunci jawaban tersebut ke peserta ujian",
+                            "Pura-pura tidak melihat kerentanan akses tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Tanggap menjaga keamanan dokumen rahasia ujian adalah komitmen memelihara validitas evaluasi belajar."
+                    }
+                ]
+            },
+            {
+                level: 7,
+                area: "ZONA 7: LINGKUNGAN BELAJAR AMAN, INKLUSIF & NIRMOKO",
+                questions: [
+                    {
+                        question: "1. Seorang siswa melaporkan bahwa ia menjadi korban perundungan (bullying) oleh siswa anak pejabat local. Tindakan Anda?",
+                        options: [
+                            "Pura-pura tidak mendengar karena takut dengan pengaruh orang tua pelaku",
+                            "Menindaklanjuti laporan secara objektif, adil, serta memberikan perlindungan utuh kepada korban sesuai prosedur",
+                            "Menyalahkan korban dan menyuruhnya diam demi nama baik sekolah",
+                            "Meminta uang damai dari keluarga pelaku agar kasus ditutup"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Setiap peserta didik berhak mendapatkan perlindungan dari kekerasan dan perundungan tanpa pandang bulu."
+                    },
+                    {
+                        question: "2. Sekolah menerima pendaftaran siswa berkebutuhan khusus (disabilitas). Sebagian staf menolak dengan alasan merepotkan. Sikap Anda?",
+                        options: [
+                            "Ikut menolak pendaftaran siswa disabilitas tersebut",
+                            "Mendukung hak pendidikan inklusif dan mendorong penyediaan aksesibilitas yang adil bagi siswa disabilitas",
+                            "Menerima siswa tersebut tetapi menaruhnya di ruang kelas yang terisolasi tanpa pembelajaran",
+                            "Mengenakan biaya SPP 5 kali lipat khusus untuk siswa disabilitas"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Prinsip pendidikan inklusif menjamin keadilan dan akses belajar setara bagi setiap anak bangsa."
+                    },
+                    {
+                        question: "3. Terjadi dugaan kekerasan fisik saat kegiatan ekstrakurikuler. Pimpinan menginstruksikan untuk 'menutup rapat' kasus dari dinas. Sikap Anda?",
+                        options: [
+                            "Menutupi kasus kekerasan demi menjaga nama baik dan jabatan pimpinan",
+                            "Mendorong penanganan transparan, melaporkan ke pihak berwenang/dinas, dan menghentikan praktik kekerasan",
+                            "Membantu menyembunyikan bukti-bukti tindak kekerasan",
+                            "Mengintimidasi korban agar tidak melapor ke luar sekolah"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Penanganan tegas terhadap kekerasan adalah kewajiban moral dan legal untuk menciptakan lingkungan aman."
+                    },
+                    {
+                        question: "4. Seorang pendidik memberikan sanksi fisik yang membahayakan kesehatan peserta didik yang terlambat masuk kelas. Sikap Anda?",
+                        options: [
+                            "Membiarkan hukuman fisik tersebut sebagai bentuk pendisiplinan ketat",
+                            "Menegur dan mengarahkan penggunaan metode pendisiplinan positif yang edukatif tanpa kekerasan",
+                            "Ikut memberikan hukuman fisik yang lebih berat",
+                            "Merekam kejadian dan menjual videonya ke media massa"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Pendisiplinan positif mengutamakan pembinaan karakter tanpa melakukan kekerasan fisik maupun verbal."
+                    },
+                    {
+                        question: "5. Siswa dari kelompok minoritas sering diejek di dalam kelas saat diskusi berlangsung. Sikap pendidik di kelas?",
+                        options: [
+                            "Tertawa bersama murid-murid lain",
+                            "Segera menghentikan ejekan, memberikan edukasi toleransi, dan menciptakan atmosfer belajar yang saling menghargai",
+                            "Menyuruh siswa minoritas tersebut keluar kelas agar diskusi aman",
+                            "Mengabaikan ejekan tersebut selama suasana kelas tidak ricuh"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Menjunjung toleransi dan kesetaraan menciptakan iklim kelas yang inklusif dan kondusif bagi semua."
+                    }
+                ]
+            },
+            {
+                level: 8,
+                area: "ZONA 8: OBJEKTIVITAS EVALUASI & TRANSPARANSI PENILAIAN",
+                questions: [
+                    {
+                        question: "1. Orang tua murid yang kaya menawarkan sumbangan AC kelas dengan syarat nilai akademis anaknya dinaikkan jadi B+. Sikap Anda?",
+                        options: [
+                            "Menerima sumbangan AC dan menaikkan nilai anak tersebut",
+                            "Menolak pengkondisian nilai dan mempertahankan objektivitas penilaian berbasis hasil belajar riil siswa",
+                            "Menaikkan nilai murid tersebut dan meminta tambahan fasilitas laptop",
+                            "Menurunkan nilai siswa lain agar posisi siswa tersebut naik ke peringkat atas"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Penilaian akademik harus murni mencerminkan kompetensi siswa dan tidak boleh diperjualbelikan."
+                    },
+                    {
+                        question: "2. Anda belum sempat mengoreksi 50 lembar jawaban ujian akhir. Rekan menyarankan memberi nilai rata-rata 85 untuk semua siswa. Sikap Anda?",
+                        options: [
+                            "Mengikuti saran rekan agar pekerjaan cepat selesai",
+                            "Menolak manipulasi dan tetap mengoreksi seluruh lembar jawaban secara cermat menggunakan rubrik baku",
+                            "Memberikan nilai 100 untuk siswa yang disukai dan nilai 50 untuk yang tidak disukai tanpa diperiksa",
+                            "Menghilangkan lembar jawaban ujian siswa"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Pemeriksaan cermat berlandaskan kriteria jelas adalah hak setiap siswa atas evaluasi yang adil."
+                    },
+                    {
+                        question: "3. Siswa bertanya tentang rincian pemotongan nilai tugasnya. Bagaimana sikap Anda sebagai pendidik berintegritas?",
+                        options: [
+                            "Marah dan menganggap siswa tidak sopan karena mempertanyakan keputusan guru",
+                            "Menjelaskan rubrik penilaian dan menunjukkan bagian mana yang perlu diperbaiki secara transparan dan terbuka",
+                            "Menaikkan nilai siswa tersebut agar ia tidak bertanya lagi",
+                            "Mengancam akan memberi nilai E jika siswa terus bertanya"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Transparansi umpan balik penilaian membantu peserta didik memahami capaian dan area perbaikannya."
+                    },
+                    {
+                        question: "4. Seorang murid kritis sering memberikan kritik tajam terhadap metode mengajar Anda. Jelang pembagian nilai, sikap Anda?",
+                        options: [
+                            "Sengaja memberikan nilai sikap terendah sebagai pembalasan dendam pribadi",
+                            "Tetap menilai secara profesional dan objektif sesuai kriteria performa tanpa dipengaruhi emosi pribadi",
+                            "Tidakkah meluluskan murid tersebut dalam mata pelajaran Anda",
+                            "Mendorong guru lain untuk ikut memberi nilai jelek pada murid tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Objektivitas penilaian profesional mensyaratkan guru bebas dari sentimen atau dendam pribadi."
+                    },
+                    {
+                        question: "5. Pelaksanaan ujian susulan/remedial hanya dibuka terbatas untuk siswa yang membayar biaya tambahan tak resmi. Sikap Anda?",
+                        options: [
+                            "Mendukung praktik tersebut untuk penghasilan tambahan pendidik",
+                            "Memastikan program remedial dibuka secara berkeadilan tanpa pungutan biaya ilegal bagi siswa yang membutuhkan",
+                            "Menaikkan tarif ujian remedial menjadi dua kali lipat",
+                            "Membatasi remedial khusus untuk anak-anak pejabat sekolah"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Remedial adalah bagian dari pelayanan ketuntasan belajar murid yang wajib bersih dari komersialisasi."
+                    }
+                ]
+            },
+            {
+                level: 9,
+                area: "ZONA 9: TATA KELOLA ASET & BANTUAN SARANA PRASARANA",
+                questions: [
+                    {
+                        question: "1. Laptop dinas inventaris bantuan pemerintah dibawa pulang dan dipakai secara permanen oleh anggota keluarga Anda untuk main game. Sikap Anda?",
+                        options: [
+                            "Membiarkannya karena menganggap laptop dinas adalah hak milik pribadi Anda",
+                            "Menggunakan barang inventaris instansi sesuai peruntukan tugas kedinasan dan menjaganya dengan bertanggung jawab",
+                            "Menjual laptop dinas tersebut ke pasar barang bekas",
+                            "Mengklaim laptop dinas hilang agar mendapatkan unit replacement baru"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Aset dan sarana milik negara/instansi wajib dimanfaatkan secara disiplin sesuai peruntukan kedinasan."
+                    },
+                    {
+                        question: "2. Mobil/kendaraan operasional sekolah dipakai untuk keperluan mudik pribadi dengan mengisi bahan bakar menggunakan anggaran operasional sekolah. Sikap Anda?",
+                        options: [
+                            "Menganggapnya wajar sebagai fasilitas pimpinan",
+                            "Menolak penggunaan barang milik daerah/lembaga untuk kepentingan pribadi di luar urusan kedinasan",
+                            "Mengubah nota pembelian BBM pribadi menjadi nota operasional sekolah",
+                            "Pura-pura tidak tahu dan ikut menumpang liburan pribadi"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Penyalahgunaan aset publik untuk kepentingan pribadi melanggar prinsip akuntabilitas barang milik instansi."
+                    },
+                    {
+                        question: "3. Banyak alat bantu praktik yang sudah rusak tetapi dalam laporan inventarisasi tertulis masih kondisi 100% baik. Tindakan Anda?",
+                        options: [
+                            "Membiarkan laporan fiktif tersebut agar tidak diperiksa oleh dinas",
+                            "Melakukan verifikasi dan pencatatan riil kondisi barang sesuai fakta audit sarana prasarana",
+                            "Membuang sisa alat praktik tanpa membuat catatan pemusnahan barang",
+                            "Menjual sisa alat rusak dan menyimpan uangnya secara pribadi"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Pencatatan inventaris yang akurat mempermudah perencanaan pemeliharaan dan mencegah kerugian aset."
+                    },
+                    {
+                        question: "4. Peralatan olahraga sekolah dipinjamkan kepada pihak luar secara komersial, tetapi uang sewa masuk ke kantong pribadi oknum pengelola. Sikap Anda?",
+                        options: [
+                            "Mendukung praktik tersebut asal Anda mendapat bagian komisi sewa",
+                            "Melaporkan pemanfaatan aset illegal dan memastikan seluruh pendapatan masuk kas resmi sekolah/instansi",
+                            "Menaikkan tarif sewa tanpa mencatatnya di buku kas",
+                            "Membantu menyembunyikan bukti penyewaan aset"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Pemanfaatan barang milik lembaga wajib dikelola transparan dan penyetorannya masuk ke kas resmi."
+                    },
+                    {
+                        question: "5. Gedung serba guna sekolah baru selesai dibangun, namun kualitas dinding retak akibat spesifikasi kontraktor dikurangi. Sikap Anda?",
+                        options: [
+                            "Menerima serah terima bangunan demi mempercepat laporan selesai",
+                            "Menolak penandatanganan berita acara serah terima sebelum pihak penyedia melakukan perbaikan sesuai spesifikasi kontrak",
+                            "Menerima uang imbalan dari kontraktor agar kekurangan fisik diabaikan",
+                            "Menutupi retakan dinding dengan cat tanpa penanganan struktur"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Ketegasan pengawasan kualitas infrastruktur menjamin keamanan warga sekolah dan keselamatan penggunaan aset."
+                    }
+                ]
+            },
+            {
+                level: 10,
+                area: "ZONA 10: KEPEMIMPINAN BERINTEGRITAS & MITRA MASYARAKAT",
+                questions: [
+                    {
+                        question: "1. Pemilihan pengurus Komite Sekolah hendak direkayasa agar seluruhnya diisi oleh kerabat dekat pimpinan. Sikap Anda?",
+                        options: [
+                            "Mendukung rekayasa agar komite selalu menyetujui semua keinginan sekolah",
+                            "Mendorong pembentukan Komite Sekolah secara demokratis, transparan, serta mewakili beragam unsur wali murid",
+                            "Menunjuk diri sendiri sebagai ketua komite secara sepihak",
+                            "Membatalkan pembentukan komite agar tidak ada yang mengawasi anggaran"
+                        ],
+                        correct: 1,
+                        feedback: "Sangat tepat! Komite Sekolah yang independen dan partisipatif adalah mitra penting pengawasan tata kelola publik."
+                    },
+                    {
+                        question: "2. Seorang guru honorer melaporkan indikasi penyimpangan dana bantuan di sekolah. Pimpinan mengancam akan memecat guru tersebut. Sikap Anda?",
+                        options: [
+                            "Ikut menekan guru honorer tersebut agar mencabut laporannya",
+                            "Mendukung perlindungan pelapor (whistleblower) dan memastikan aduan diproses secara objektif tanpa intimidasi",
+                            "Memecat guru honorer tersebut secara sepihak",
+                            "Menyebarkan identitas pelapor ke publik agar mendapat sanksi sosial"
+                        ],
+                        correct: 1,
+                        feedback: "Benar! Perlindungan bagi peniup peluit (whistleblower) sangat krusial untuk membongkar penyimpangan dan menegakkan integritas."
+                    },
+                    {
+                        question: "3. Pendidik mewajibkan seluruh siswa membeli buku bahan ajar buatan pribadinya yang harganya jauh di atas harga pasaran. Sikap Anda?",
+                        options: [
+                            "Mendukung pemaksaan pembelian demi keuntungan finansial pribadi guru",
+                            "Menolak pemaksaan komersialisasi buku dan memastikan penyediaan bahan ajar sesuai regulasi standar yang terjangkau",
+                            "Mengancam siswa yang tidak membeli buku tidak akan naik kelas",
+                            "Mengambil bagian 30% dari penjualan buku wajib tersebut"
+                        ],
+                        correct: 1,
+                        feedback: "Luar biasa! Penyediaan bahan ajar tidak boleh dimanfaatkan untuk komersialisasi yang membebani orang tua siswa."
+                    },
+                    {
+                        question: "4. Sebuah yayasan memberikan penghargaan kepada sekolah. Saat penerimaan hadiah dana, pimpinan membagikannya secara diam-diam tanpa dicatat di kas. Sikap Anda?",
+                        options: [
+                            "Menerima bagian dana rahasia tersebut dengan senang hati",
+                            "Mengingatkan pimpinan agar seluruh dana hibah/penghargaan dicatat secara resmi dalam laporan penerimaan instansi",
+                            "Meminta bagian dana yang lebih besar dari staf lain",
+                            "Membuang catatan bukti penerimaan penghargaan"
+                        ],
+                        correct: 1,
+                        feedback: "Tepat sekali! Seluruh penerimaan dana sumbangan/hibah wajib dicatat transparan dalam pembukuan resmi lembaga."
+                    },
+                    {
+                        question: "5. Sekolah mengadakan forum refleksi tahunan bersama warga dan wali murid. Apa langkah pimpinan berintegritas?",
+                        options: [
+                            "Mengatur agar forum hanya memuji kebaikan sekolah dan melarang aduan",
+                            "Membuka ruang dialog terbuka, menerima kritik membangun, serta menyampaikan laporan kinerja secara jujur",
+                            "Membatalkan forum refleksi agar tidak ada orang tua yang bertanya",
+                            "Mengenakan biaya masuk bagi wali murid yang ingin menghadiri forum"
+                        ],
+                        correct: 1,
+                        feedback: "Sempurna! Akuntabilitas publik dan keterbukaan terhadap kritik adalah ciri pimpinan pendidikan yang memiliki integritas sejati!"
+                    }
+                ]
+            }
+        ];
+
+        const flatQuestions = [];
+        quizData.forEach((zone) => {
+            zone.questions.forEach((q, qIdx) => {
+                flatQuestions.push({
+                    ...q,
+                    area: zone.area,
+                    questionNumInZone: qIdx + 1
+                });
+            });
+        });
+
+        let scene, camera, renderer, player, road, gates = [], stars = [];
+        let score = 0;
+        let isQuizActive = false;
+        let isGameStarted = false;
+        
+        const totalGates = flatQuestions.length; // 50 pintu
+        const roadLength = 2400; 
+        const finishLineZ = -roadLength + 40;
+
+        const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        let joystickActive = false;
+        let joystickDir = new THREE.Vector2();
+
+        window.onload = function () {
+            try {
+                if (!window.WebGLRenderingContext) {
+                    throw new Error("WebGL tidak didukung");
+                }
+                init();
+                animate();
+            } catch (err) {
+                console.error("Inisialisasi 3D Engine Gagal:", err);
+                document.getElementById('webgl-error-banner').style.display = 'block';
+            }
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c0e12);
+            scene.fog = new THREE.FogExp2(0x0c0e12, 0.008);
+
+            try {
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+            } catch (e) {
+                document.getElementById('webgl-error-banner').style.display = 'block';
+                return;
+            }
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 8, 14);
+
+            const ambientLight = new THREE.AmbientLight(0x384152, 1.0);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(40, 60, 20);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            createEnvironment();
+            createTeacherPlayer();
+            createGatesAndStars();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('keydown', e => { getAudioContext(); handleKey(e, true); });
+            window.addEventListener('keyup', e => handleKey(e, false));
+            window.addEventListener('blur', resetAllKeys);
+            document.getElementById('restart-btn').addEventListener('click', () => location.reload());
+            
+            // Listener untuk Halaman Awal SIGMA
+            document.getElementById('start-game-btn').addEventListener('click', () => {
+                getAudioContext();
+                setupAudioSystem();
+                playBGM(); // Memutar BGM bawaan atau BGM kustom jika sudah diunggah
+                document.getElementById('start-screen').classList.add('hidden');
+                isGameStarted = true;
+            });
+
+            const logoInput = document.getElementById('custom-logo-input');
+            const logoPreview = document.getElementById('custom-logo-preview');
+            const defaultSvg = document.getElementById('default-logo-svg');
+
+            if (logoInput) {
+                logoInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            logoPreview.src = event.target.result;
+                            logoPreview.style.display = 'block';
+                            if (defaultSvg) defaultSvg.style.display = 'none';
+                        };
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+            }
+
+            const exitModal = document.getElementById('exit-modal');
+            document.getElementById('exit-btn').addEventListener('click', () => {
+                if (exitModal) exitModal.style.display = 'flex';
+            });
+            document.getElementById('cancel-exit-btn').addEventListener('click', () => {
+                if (exitModal) exitModal.style.display = 'none';
+            });
+            document.getElementById('confirm-exit-btn').addEventListener('click', () => {
+                if (exitModal) exitModal.style.display = 'none';
+                exitToStartScreen();
+            });
+
+            initMobileControls();
+            setupAudioSystem();
+            updateHUD();
+        }
+
+        function createEnvironment() {
+            const roadGeo = new THREE.PlaneGeometry(22, roadLength);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+            road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.z = -roadLength / 2 + 20;
+            road.receiveShadow = true;
+            scene.add(road);
+
+            const lineGeo = new THREE.PlaneGeometry(0.3, 4);
+            const lineMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.8 });
+            for(let z = 15; z > -roadLength + 20; z -= 10) {
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(0, 0.02, z);
+                scene.add(line);
+            }
+
+            const groundGeo = new THREE.PlaneGeometry(600, roadLength + 200);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 1 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.set(0, -0.05, -roadLength/2);
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const colors = [0x1e1b4b, 0x0f172a, 0x1e293b, 0x111827];
+            for (let z = 15; z > -roadLength - 20; z -= (Math.random() * 20 + 20)) {
+                createBuilding(-22, z, colors[Math.floor(Math.random() * colors.length)]);
+                createBuilding(22, z, colors[Math.floor(Math.random() * colors.length)]);
+            }
+
+            createFinishPodium();
+        }
+
+        function createBuilding(x, z, color) {
+            const w = Math.random() * 12 + 12;
+            const h = Math.random() * 40 + 25;
+            const d = Math.random() * 12 + 12;
+
+            const geo = new THREE.BoxGeometry(w, h, d);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, h/2, z);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+        }
+
+        function createTeacherPlayer() {
+            player = new THREE.Group();
+            
+            const shirtMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.6 });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 }); 
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xf3d5b5, roughness: 0.5 });
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+            const bookMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3 });
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.6, 0.6), shirtMat);
+            body.position.y = 2.2;
+            body.castShadow = true;
+            player.add(body);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.75), skinMat);
+            head.position.y = 3.5;
+            head.castShadow = true;
+            player.add(head);
+
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.3, 0.8), hairMat);
+            hair.position.y = 3.9;
+            player.add(hair);
+
+            const legGeo = new THREE.BoxGeometry(0.4, 1.4, 0.4);
+            player.leftLeg = new THREE.Mesh(legGeo, pantsMat);
+            player.leftLeg.position.set(-0.28, 0.7, 0);
+            player.leftLeg.castShadow = true;
+            player.add(player.leftLeg);
+
+            player.rightLeg = new THREE.Mesh(legGeo, pantsMat);
+            player.rightLeg.position.set(0.28, 0.7, 0);
+            player.rightLeg.castShadow = true;
+            player.add(player.rightLeg);
+
+            const armGeo = new THREE.BoxGeometry(0.32, 1.3, 0.32);
+            const leftArm = new THREE.Mesh(armGeo, shirtMat);
+            leftArm.position.set(-0.72, 2.1, 0);
+            player.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(armGeo, shirtMat);
+            rightArm.position.set(0.72, 2.1, 0);
+            player.add(rightArm);
+
+            const book = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.85, 1.0), bookMat);
+            book.position.set(0.78, 1.5, 0.25);
+            book.castShadow = true;
+            player.add(book);
+
+            scene.add(player);
+        }
+
+        function createGatesAndStars() {
+            const gateSpacing = (roadLength - 80) / totalGates;
+            
+            for (let i = 0; i < totalGates; i++) {
+                const zPos = - (i + 1) * gateSpacing;
+                const qData = flatQuestions[i];
+                
+                const gateGroup = new THREE.Group();
+                gateGroup.position.set(0, 0, zPos);
+
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
+                const cyanNeonMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 1.2 });
+
+                const p1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 10, 1.2), frameMat);
+                p1.position.set(-7, 5, 0);
+                gateGroup.add(p1);
+                
+                const p2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 10, 1.2), frameMat);
+                p2.position.set(7, 5, 0);
+                gateGroup.add(p2);
+
+                const topBar = new THREE.Mesh(new THREE.BoxGeometry(15.2, 1.2, 1.2), frameMat);
+                topBar.position.set(0, 10, 0);
+                gateGroup.add(topBar);
+
+                const doorGeo = new THREE.BoxGeometry(13, 9.2, 0.2);
+                const doorMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x0284c7, emissive: 0x0369a1, emissiveIntensity: 0.4,
+                    transparent: true, opacity: 0.5, metalness: 0.8
+                });
+                const door = new THREE.Mesh(doorGeo, doorMat);
+                door.position.set(0, 4.6, 0);
+                gateGroup.add(door);
+
+                const lockIcon = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.25, 16, 32), cyanNeonMat);
+                lockIcon.position.set(0, 5, 0.2);
+                gateGroup.add(lockIcon);
+
+                scene.add(gateGroup);
+                gates.push({ 
+                    group: gateGroup, 
+                    door: door, 
+                    lock: lockIcon, 
+                    z: zPos, 
+                    unlocked: false, 
+                    questionData: qData, 
+                    gateIndex: i 
+                });
+
+                if (i % 2 === 0) {
+                    createIntegrityStar(zPos + gateSpacing / 2);
+                }
+            }
+        }
+
+        function createIntegrityStar(z) {
+            const group = new THREE.Group();
+            const starMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xf59e0b, emissiveIntensity: 1.5, metalness: 0.9 });
+            const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.7, 0), starMat);
+            group.add(star);
+            
+            group.position.set(Math.random() * 10 - 5, 2.2, z);
+            scene.add(group);
+            stars.push(group);
+        }
+
+        function createFinishPodium() {
+            const podiumZ = finishLineZ - 5;
+            const group = new THREE.Group();
+            group.position.set(0, 0, podiumZ);
+
+            const mat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 5.5, 2.5, 32), mat);
+            base.position.y = 1.25;
+            group.add(base);
+
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 1.0, emissive: 0xd97706, emissiveIntensity: 0.5 });
+            const trophy = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 0.8, 3.5, 16), goldMat);
+            trophy.position.y = 4.2;
+            group.add(trophy);
+
+            scene.add(group);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isQuizActive) {
+                updatePlayerMovement();
+                updateCamera();
+                checkCollisions();
+            }
+
+            stars.forEach(star => {
+                star.rotation.y += 0.04;
+                star.position.y = 2.2 + Math.sin(Date.now() * 0.003 + star.position.z) * 0.3;
+            });
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        let walkCycle = 0;
+        function updatePlayerMovement() {
+            if (!isGameStarted || !player || isQuizActive) return;
+
+            let moveX = 0;
+            let moveZ = 0;
+            const speed = 0.28;
+
+            if (keys.w || keys.ArrowUp) moveZ -= 1;
+            if (keys.s || keys.ArrowDown) moveZ += 1;
+            if (keys.a || keys.ArrowLeft) moveX -= 1;
+            if (keys.d || keys.ArrowRight) moveX += 1;
+
+            if (joystickActive) {
+                moveX = joystickDir.x;
+                moveZ = joystickDir.y;
+            }
+
+            const isMoving = moveX !== 0 || moveZ !== 0;
+
+            if (isMoving) {
+                const len = Math.sqrt(moveX * moveX + moveZ * moveZ);
+                const normX = moveX / (len || 1);
+                const normZ = moveZ / (len || 1);
+
+                player.position.x += normX * speed;
+                player.position.z += normZ * speed;
+
+                // Restrict character within the road boundaries
+                player.position.x = Math.max(-9.2, Math.min(9.2, player.position.x));
+
+                // Smoothly rotate character towards movement direction
+                const targetAngle = Math.atan2(normX, normZ);
+                player.rotation.y = targetAngle;
+
+                // Animate leg walking cycle
+                walkCycle += 0.2;
+                if (player.leftLeg && player.rightLeg) {
+                    player.leftLeg.rotation.x = Math.sin(walkCycle) * 0.6;
+                    player.rightLeg.rotation.x = -Math.sin(walkCycle) * 0.6;
+                }
+            } else {
+                // Reset legs when stationary
+                if (player.leftLeg && player.rightLeg) {
+                    player.leftLeg.rotation.x = 0;
+                    player.rightLeg.rotation.x = 0;
+                }
+            }
+        }
+
+        function updateCamera() {
+            if (!player || !camera) return;
+            const targetCamX = player.position.x * 0.35;
+            const targetCamY = player.position.y + 6.5;
+            const targetCamZ = player.position.z + 12.0;
+
+            // Smooth camera lerp following the player
+            camera.position.x += (targetCamX - camera.position.x) * 0.1;
+            camera.position.y += (targetCamY - camera.position.y) * 0.1;
+            camera.position.z += (targetCamZ - camera.position.z) * 0.1;
+
+            camera.lookAt(player.position.x, player.position.y + 2.2, player.position.z - 2.0);
+        }
+
+        function checkCollisions() {
+            if (!isGameStarted || isQuizActive) return;
+
+            for (const gate of gates) {
+                if (!gate.unlocked) {
+                    const dist = Math.abs(player.position.z - gate.z);
+                    if (dist < 2.8) {
+                        player.position.z = gate.z + 2.8;
+                        if (!isQuizActive) {
+                            openQuiz(gate);
+                        }
+                    }
+                }
+            }
+
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                if(player.position.distanceTo(star.position) < 2.5) {
+                    scene.remove(star);
+                    stars.splice(i, 1);
+                    score += 5;
+                    playSound('star');
+                    updateHUD();
+                }
+            }
+
+            const unlockedCount = gates.filter(g => g.unlocked).length;
+            if (player.position.z < finishLineZ && unlockedCount === totalGates) {
+                showFinishScreen();
+            }
+        }
+
+        function openQuiz(gate) {
+            isQuizActive = true;
+            resetAllKeys();
+            const qData = gate.questionData;
+            
+            document.getElementById('quiz-area-title').innerText = qData.area;
+            document.getElementById('quiz-question-num').innerText = `GERBANG ${gate.gateIndex + 1} DARI ${totalGates}`;
+            document.getElementById('quiz-question').innerText = qData.question;
+            document.getElementById('quiz-feedback').className = '';
+            document.getElementById('quiz-feedback').innerText = "";
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span class="radio-dot"></span><span>${opt}</span>`;
+                btn.onclick = () => selectOption(index, btn, gate);
+                container.appendChild(btn);
+            });
+
+            document.getElementById('quiz-overlay').classList.add('active');
+        }
+
+        function selectOption(index, btn, gate) {
+            if(!isQuizActive) return;
+
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            const qData = gate.questionData;
+            const feedbackEl = document.getElementById('quiz-feedback');
+
+            if (index === qData.correct) {
+                feedbackEl.innerText = qData.feedback;
+                feedbackEl.className = 'show correct';
+                
+                score += 10;
+                playSound('correct');
+                unlockGate(gate);
+                updateHUD();
+
+                setTimeout(() => {
+                    closeQuiz();
+                }, 1600);
+            } else {
+                feedbackEl.innerText = "Jawaban belum tepat. Pilihlah keputusan yang paling jujur, transparan, dan menjunjung etika pendidik.";
+                feedbackEl.className = 'show incorrect';
+                score = Math.max(0, score - 2);
+                playSound('incorrect');
+                updateHUD();
+                
+                setTimeout(() => {
+                    btn.classList.remove('selected');
+                    feedbackEl.classList.remove('show');
+                }, 1800);
+            }
+        }
+
+        function closeQuiz() {
+            document.getElementById('quiz-overlay').classList.remove('active');
+            isQuizActive = false;
+        }
+
+        function unlockGate(gate) {
+            gate.unlocked = true;
+            gate.door.material.color.setHex(0x4ade80);
+            gate.door.material.emissive.setHex(0x4ade80);
+
+            let opacity = 0.5;
+            const ani = setInterval(() => {
+                opacity -= 0.05;
+                gate.door.material.opacity = opacity;
+                if(opacity <= 0) {
+                    clearInterval(ani);
+                    gate.group.remove(gate.door);
+                    gate.group.remove(gate.lock);
+                }
+            }, 30);
+        }
+
+        function updateHUD() {
+            document.getElementById('score').innerText = score;
+            const unlockedCount = gates.filter(g => g.unlocked).length;
+            const progress = (unlockedCount / totalGates) * 100;
+            document.getElementById('progress-bar-fill').style.width = progress + '%';
+            
+            if(unlockedCount < totalGates) {
+                const nextGate = gates.find(g => !g.unlocked) || gates[totalGates - 1];
+                document.getElementById('level-text').innerText = `${nextGate.questionData.area} (Gerbang ${unlockedCount + 1}/${totalGates})`;
+            } else {
+                document.getElementById('level-text').innerText = `SEMUA GERBANG TERBUKA! MENUJU PODIUM TELADAN...`;
+            }
+        }
+
+        function showFinishScreen() {
+            isQuizActive = true;
+            playSound('victory');
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('finish-screen').classList.add('active');
+        }
+
+        function exitToStartScreen() {
+            pauseBGM();
+            isGameStarted = false;
+            isQuizActive = false;
+
+            // Hide overlay UI elements
+            document.getElementById('quiz-overlay').classList.remove('active');
+            document.getElementById('finish-screen').classList.remove('active');
+
+            // Reset game objects and state
+            resetGameState();
+
+            // Show start screen
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function resetGameState() {
+            // Remove gates and stars from 3D scene
+            gates.forEach(g => scene.remove(g.group));
+            gates = [];
+            stars.forEach(s => scene.remove(s));
+            stars = [];
+
+            // Re-create initial gates and stars
+            createGatesAndStars();
+
+            // Reset player position and orientation
+            if (player) {
+                player.position.set(0, 0, 0);
+                player.rotation.set(0, 0, 0);
+            }
+
+            // Reset score and HUD progress
+            score = 0;
+            updateHUD();
+        }
+
+        function handleKey(e, isDown) {
+            const k = e.key ? e.key.toLowerCase() : '';
+            if (k === 'w') keys.w = isDown;
+            if (k === 'a') keys.a = isDown;
+            if (k === 's') keys.s = isDown;
+            if (k === 'd') keys.d = isDown;
+            if (e.key === 'ArrowUp') keys.ArrowUp = isDown;
+            if (e.key === 'ArrowDown') keys.ArrowDown = isDown;
+            if (e.key === 'ArrowLeft') keys.ArrowLeft = isDown;
+            if (e.key === 'ArrowRight') keys.ArrowRight = isDown;
+        }
+
+        function resetAllKeys() {
+            keys.w = false; keys.a = false; keys.s = false; keys.d = false;
+            keys.ArrowUp = false; keys.ArrowDown = false;
+            keys.ArrowLeft = false; keys.ArrowRight = false;
+            joystickActive = false;
+            joystickDir.set(0, 0);
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function initMobileControls() {
+            const base = document.getElementById('joystick-base');
+            const knob = document.getElementById('joystick-knob');
+
+            if (!base || !knob) return;
+
+            base.addEventListener('touchstart', (e) => {
+                getAudioContext();
+                joystickActive = true;
+                if (e.touches && e.touches[0]) updateJoystick(e.touches[0]);
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (joystickActive && e.touches && e.touches[0]) {
+                    updateJoystick(e.touches[0]);
+                }
+            }, { passive: true });
+
+            const resetJoystick = () => {
+                joystickActive = false;
+                knob.style.transform = `translate(0px, 0px)`;
+                joystickDir.set(0, 0);
+            };
+
+            window.addEventListener('touchend', resetJoystick);
+            window.addEventListener('touchcancel', resetJoystick);
+
+            function updateJoystick(touch) {
+                if (!touch) return;
+                const rect = base.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const maxDist = rect.width / 2;
+
+                const dx = touch.clientX - centerX;
+                const dy = touch.clientY - centerY;
+                const dist = Math.min(Math.sqrt(dx * dx + dy * dy), maxDist);
+                const angle = Math.atan2(dy, dx);
+
+                const knx = Math.cos(angle) * dist;
+                const kny = Math.sin(angle) * dist;
+                knob.style.transform = `translate(${knx}px, ${kny}px)`;
+
+                joystickDir.x = knx / maxDist;
+                joystickDir.y = kny / maxDist;
+            }
+        }
+    </script>
+</body>
+</html>
