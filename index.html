@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SIGMA | Dinas Pendidikan Kabupaten Majalengka</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f8fafc;
+        }
+
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Futuristic Glassmorphism Transparan */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 242, 254, 0.15), inset 0 0 12px rgba(56, 189, 248, 0.2);
+        }
+
+        .glass-card {
+            background: rgba(10, 15, 30, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 2px solid rgba(34, 211, 238, 0.5);
+            border-radius: 24px;
+            box-shadow: 0 0 30px rgba(34, 211, 238, 0.25), inset 0 0 15px rgba(34, 211, 238, 0.15);
+        }
+
+        .neon-btn {
+            border: 1px solid rgba(34, 211, 238, 0.6);
+            background: rgba(14, 116, 144, 0.25);
+            backdrop-filter: blur(8px);
+            text-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .neon-btn:hover {
+            background: rgba(34, 211, 238, 0.4);
+            border-color: #38bdf8;
+            box-shadow: 0 0 25px rgba(34, 211, 238, 0.6);
+        }
+
+        .neon-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Touch Joystick Transparan */
+        .joystick-zone {
+            position: absolute;
+            bottom: 28px;
+            left: 28px;
+            width: 130px;
+            height: 130px;
+            background: rgba(15, 23, 42, 0.35);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(56, 189, 248, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+            z-index: 30;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+        }
+
+        .joystick-knob {
+            width: 55px;
+            height: 55px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.8) 0%, rgba(14, 116, 144, 0.9) 100%);
+            border: 2px solid #a5f3fc;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.8);
+            transform: translate(0px, 0px);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.8)); }
+            50% { filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.9)); }
+        }
+
+        .space-glow {
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        /* Custom Scrollbar Transparan */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(3, 7, 18, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.5);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="relative w-full h-full select-none bg-slate-950">
+
+    <!-- Start Screen Overlay Transparan -->
+    <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-lg">
+        <div class="glass-card max-w-md w-full p-6 sm:p-8 text-center flex flex-col items-center relative overflow-hidden">
+            <!-- Decorative Hologram Orbs -->
+            <div class="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Logo Hologram Kosmis -->
+            <div class="mb-4 flex justify-center items-center space-glow">
+                <img id="custom-app-logo" src="logodisdik3.jpg" alt="Logo Dinas Pendidikan Kabupaten Majalengka" class="max-w-[130px] max-h-[130px] object-contain drop-shadow-[0_0_20px_rgba(34,211,238,0.7)]" onerror="this.style.display='none'; document.getElementById('fallback-svg-logo').style.display='block';">
+                
+                <!-- SVG Logo Hologram Dinas Pendidikan Kabupaten Majalengka -->
+                <svg id="fallback-svg-logo" width="130" height="130" viewBox="0 0 200 200" fill="none" class="hidden">
+                    <defs>
+                        <radialGradient id="disdikBg" cx="50%" cy="50%" r="50%" fx="50%" fy="30%">
+                            <stop offset="0%" stop-color="#e0f2fe" />
+                            <stop offset="70%" stop-color="#bae6fd" />
+                            <stop offset="100%" stop-color="#7dd3fc" />
+                        </radialGradient>
+                    </defs>
+                    <!-- Outer Circle Frame -->
+                    <circle cx="100" cy="100" r="95" fill="url(#disdikBg)" stroke="#f0f9ff" stroke-width="4" />
+                    
+                    <!-- Top Toga Cap Line Outline -->
+                    <path d="M 45 62 L 100 42 L 155 62 L 100 80 Z" stroke="#0284c7" stroke-width="4.5" fill="none" stroke-linejoin="round"/>
+                    <line x1="72" y1="71" x2="72" y2="92" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+                    <line x1="128" y1="71" x2="128" y2="92" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+                    
+                    <!-- Majalengka Shield Emblem -->
+                    <polygon points="100,34 112,42 112,60 100,66 88,60 88,42" fill="#22c55e" stroke="#eab308" stroke-width="2"/>
+                    <polygon points="100,38 108,44 108,57 100,61 92,57 92,44" fill="#15803d"/>
+                    
+                    <!-- DISDIK Text -->
+                    <text x="100" y="122" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-size="36" fill="#0284c7" text-anchor="middle" letter-spacing="1">DISDIK</text>
+                    
+                    <!-- KABUPATEN MAJALENGKA Text -->
+                    <text x="100" y="142" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="11.5" fill="#16a34a" text-anchor="middle" letter-spacing="0.5">KABUPATEN MAJALENGKA</text>
+                    
+                    <!-- Slogan Motto -->
+                    <text x="100" y="157" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-style="italic" font-size="8.5" fill="#1e293b" text-anchor="middle">"Profesional, Melayani, Mencerdaskan"</text>
+                </svg>
+            </div>
+
+            <!-- Title & Subtitle Badge -->
+            <div class="px-4 py-1 mb-3 rounded-full bg-cyan-950/80 border border-cyan-400/50 text-cyan-300 font-bold text-xs tracking-widest uppercase shadow-lg">
+                Dinas Pendidikan Kabupaten Majalengka
+            </div>
+            
+            <h1 class="font-orbitron text-4xl sm:text-5xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-purple-400 drop-shadow-[0_0_15px_rgba(56,189,248,0.6)] mb-1">
+                SIGMA
+            </h1>
+            <p class="text-xs font-semibold text-slate-300 tracking-wider mb-6">
+                Simulasi Game Melawan Anti Korupsi
+            </p>
+
+            <!-- Start Button -->
+            <button id="start-btn" onclick="startGame()" class="neon-btn font-orbitron w-full py-4 px-6 rounded-2xl text-cyan-200 font-black text-lg tracking-widest uppercase shadow-lg">
+                🚀 Jelajahi Ruang Anti Korupsi
+            </button>
+        </div>
+    </div>
+
+    <!-- 3D Canvas Space Scene -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Top In-Game HUD Transparan -->
+    <div id="hud-panel" class="fixed top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none hidden">
+        <!-- Left Stats Glass Panel -->
+        <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center space-x-4 pointer-events-auto">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl filter drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">🌌</span>
+                <div>
+                    <div class="text-[9px] text-cyan-300 uppercase font-bold tracking-widest">Poin Integritas</div>
+                    <div id="score-text" class="font-orbitron text-xl font-black text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.8)]">0</div>
+                </div>
+            </div>
+            <div class="h-8 w-px bg-cyan-500/30 rounded-full"></div>
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl filter drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">🛸</span>
+                <div>
+                    <div class="text-[9px] text-cyan-300 uppercase font-bold tracking-widest">Sektor Kependidikan</div>
+                    <div id="zone-text" class="font-orbitron text-xs font-black text-purple-300">1 / 5</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Control Buttons -->
+        <div class="flex items-center space-x-2 pointer-events-auto">
+            <!-- Audio Toggle Button -->
+            <button id="audio-toggle-btn" onclick="toggleAudio()" class="glass-panel neon-btn p-3 rounded-2xl text-cyan-300 flex items-center justify-center text-xl">
+                <span id="audio-icon">🔊</span>
+            </button>
+
+            <!-- Exit Button -->
+            <button onclick="confirmExit()" class="glass-panel px-4 py-3 rounded-2xl border border-rose-500/40 bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 font-bold text-xs uppercase flex items-center space-x-1.5 backdrop-blur-md">
+                <span>🚪</span>
+                <span class="hidden sm:inline">Keluar</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Virtual Touch Joystick Controls -->
+    <div id="joystick-container" class="joystick-zone hidden">
+        <div id="joystick-knob" class="joystick-knob"></div>
+    </div>
+
+    <!-- Mobile Action Button -->
+    <div id="mobile-action-btn" onclick="triggerMobileAction()" class="fixed bottom-7 right-7 z-30 w-16 h-16 rounded-2xl glass-panel neon-btn text-cyan-300 flex items-center justify-center text-2xl font-black active:scale-90 hidden">
+        ⚡
+    </div>
+
+    <!-- Floating Minimized Quiz Widget Badge -->
+    <div id="minimized-quiz-pill" onclick="restoreQuiz()" class="fixed top-20 right-4 z-30 glass-card px-4 py-2.5 rounded-2xl bg-cyan-950/80 hover:bg-cyan-900/90 text-cyan-300 font-bold text-xs sm:text-sm flex items-center space-x-2 cursor-pointer shadow-xl animate-bounce hidden">
+        <span class="text-lg">❓</span>
+        <span>Misi Transmisi Aktif (Buka)</span>
+    </div>
+
+    <!-- Quiz Gate Transparan Modal -->
+    <div id="quiz-modal" class="fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md hidden">
+        <div class="glass-card max-w-xl w-full p-6 sm:p-8 text-left relative overflow-hidden">
+            <!-- Header Controls (Minimize & Close Buttons) -->
+            <div class="flex items-center justify-between mb-4">
+                <div id="quiz-zone-badge" class="inline-block px-3 py-1 rounded-full bg-cyan-950/90 border border-cyan-400/50 text-cyan-300 font-extrabold text-xs uppercase tracking-wider">
+                    Misi Evaluasi Integritas
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- Minimize Button -->
+                    <button onclick="minimizeQuiz()" title="Minimize Pertanyaan" class="neon-btn w-8 h-8 rounded-xl text-cyan-300 font-black text-sm flex items-center justify-center">
+                        ➖
+                    </button>
+                    <!-- Close / Exit Question Button -->
+                    <button onclick="closeQuizModal()" title="Keluar dari Pertanyaan" class="w-8 h-8 rounded-xl bg-rose-900/40 border border-rose-500/50 text-rose-300 hover:bg-rose-800/60 font-black text-sm flex items-center justify-center transition">
+                        ✖
+                    </button>
+                </div>
+            </div>
+            
+            <h2 id="quiz-question" class="text-base sm:text-lg font-semibold text-slate-100 mb-6 leading-relaxed">
+                Pertanyaan tantangan akan muncul di sini...
+            </h2>
+
+            <!-- Options Container -->
+            <div id="quiz-options" class="space-y-3 mb-6">
+                <!-- Options inserted dynamically -->
+            </div>
+
+            <!-- Quiz Result Feedback Banner -->
+            <div id="quiz-feedback" class="hidden p-4 rounded-2xl text-center text-sm font-bold backdrop-blur-md"></div>
+        </div>
+    </div>
+
+    <!-- Exit Confirmation Modal Transparan -->
+    <div id="exit-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden">
+        <div class="glass-card max-w-sm w-full p-6 text-center border-rose-500/50">
+            <div class="text-4xl mb-2">⚠️</div>
+            <h3 class="font-orbitron text-lg font-black text-rose-300 mb-2">Hentikan Simulasi Kosmis?</h3>
+            <p class="text-xs font-medium text-slate-300 mb-6">Kemajuan dan poin integritas pada sektor ini akan direset.</p>
+            
+            <div class="flex space-x-3">
+                <button onclick="closeExitModal()" class="neon-btn flex-1 py-3 rounded-xl text-slate-300 font-bold text-xs uppercase">
+                    Batal
+                </button>
+                <button onclick="executeExit()" class="flex-1 py-3 rounded-xl bg-rose-900/60 border border-rose-500 hover:bg-rose-800 text-rose-200 font-bold text-xs uppercase transition">
+                    Ya, Keluar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        let isGameStarted = false;
+        let isPaused = false;
+        let score = 0;
+        let currentZoneIndex = 0;
+        let activeGateIndex = null;
+        let activeGateRef = null;
+
+        // Three.js Core Objects
+        let scene, camera, renderer;
+        let playerGroup;
+        let leftArmGroup, rightArmGroup, leftLegGroup, rightLegGroup;
+        let walkTime = 0;
+        let gates = [];
+        let starsBg = [];
+        let nebulaClouds = [];
+
+        // Player Movement & Controls
+        const moveSpeed = 0.32;
+        const keys = { W: false, A: false, S: false, D: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        let touchInput = { x: 0, y: 0 };
+        let isTouchActive = false;
+
+        // Audio Engine
+        let audioCtx = null;
+        let isAudioPlaying = false;
+        let customAudioElement = null;
+        let bgmOscillatorInterval = null;
+
+        // Data 5 Zona & 25 Pertanyaan Integritas Praktisi Pendidikan
+        const zonesData = [
+            {
+                title: "Sektor 1: Integritas Pelayanan Publik & Etika Profesi Kependidikan",
+                questions: [
+                    { q: "Seorang tenaga kependidikan (staf TU) diminta mempercepat pengurusan dokumen administrasi sekolah dengan imbalan uang tip. Tindakan berintegritas yang tepat?", options: ["A. Menolak uang tip secara sopan dan memberikan pelayanan sesuai SOP", "B. Menerima uang tip sebagai imbalan jasa", "C. Meminta tambahan imbalan agar lebih cepat", "D. Mengabaikan pengurusan dokumen tersebut"], correct: 0 },
+                    { q: "Bagaimana prinsip utama integritas bagi seluruh praktisi kependidikan dalam menjalankan tugas harian?", options: ["A. Konsistensi antara ucapan, tindakan, aturan etika, dan nilai moral", "B. Mengutamakan kenyamanan pribadi di atas tugas profesi", "C. Bekerja giat hanya saat ada pengawasan pimpinan", "D. Menuruti semua permintaan warga sekolah walau melanggar aturan"], correct: 0 },
+                    { q: "Seorang pengawas sekolah menemukan ketidaksesuaian laporan administrasi di sekolah pendampingan. Tindakan profesional yang harus diambil?", options: ["A. Menyampaikan temuan secara objektif dan memberikan pembinaan sesuai regulasi", "B. Menyembunyikan temuan agar nama baik sekolah tetap terjaga", "C. Meminta imbalan agar laporan diperbaiki secara diam-diam", "D. Membiarkan saja tanpa tindak lanjut"], correct: 0 },
+                    { q: "Mengapa budaya saling mengingatkan antar sesama praktisi kependidikan sangat penting di lingkungan sekolah?", options: ["A. Menjaga komitmen bersama terhadap nilai integritas dan mencegah pelanggaran", "B. Mencari-cari kesalahan teman sejawat", "C. Menciptakan persaingan kerja yang tidak sehat", "D. Sekadar memenuhi formalitas evaluasi kerja"], correct: 0 },
+                    { q: "Seorang kepala sekolah mendapat tekanan untuk meloloskan calon peserta didik yang tidak memenuhi syarat PPDB. Sikap berintegritas?", options: ["A. Mempertahankan aturan PPDB secara adil, objektif, dan transparan", "B. Menuruti tekanan demi mengamankan posisi jabatan", "C. Meminta imbalan dana kelulusan khusus", "D. Mengubah kriteria seleksi secara sepihak"], correct: 0 }
+                ]
+            },
+            {
+                title: "Sektor 2: Transparansi Pengelolaan Keuangan & Aset Sekolah",
+                questions: [
+                    { q: "Pengelolaan dana operasional dan bantuan sekolah yang akuntabel ditandai oleh?", options: ["A. Pencatatan rinci, bukti transaksi sah, dan publikasi terbuka kepada pemangku kepentingan", "B. Pengelolaan secara tertutup oleh satu orang pengurus", "C. Penggunaan nota rekayasa tanpa verifikasi barang", "D. Pembelian barang sekolah tanpa nota resmi"], correct: 0 },
+                    { q: "Staf sarana prasarana menemukan barang inventaris sekolah yang rusak ringan. Tindakan berintegritas yang dilakukan?", options: ["A. Mencatat dalam buku inventaris dan mengajukan pemeliharaan sesuai prosedur", "B. Membawa pulang barang tersebut untuk penggunaan pribadi", "C. Menjual barang tanpa berita acara penghapusan resmi", "D. Membiarkan barang terbengkalai hingga rusak berat"], correct: 0 },
+                    { q: "Bagaimana proses pengadaan barang dan jasa di sekolah yang bersih dari praktik penyimpangan?", options: ["A. Melalui mekanisme resmi (seperti SIPLah) secara transparan dan efisien", "B. Menunjuk penyedia barang kerabat pribadi tanpa pembanding harga", "C. Memalsukan stempel toko demi kelengkapan berkas", "D. Membeli barang tanpa pemeriksaan kualitas"], correct: 0 },
+                    { q: "Dalam penyusunan Rencana Kegiatan dan Anggaran Sekolah (RKAS), praktisi kependidikan hendaknya?", options: ["A. Melibatkan tim manajemen, guru, staf, dan komite secara partisipatif", "B. Menyusun secara sepihak oleh bendahara saja", "C. Meniru RKAS sekolah lain tanpa analisis kebutuhan nyata", "D. Mengalokasikan anggaran untuk kegiatan yang tidak prioritas"], correct: 0 },
+                    { q: "Sikap praktisi kependidikan terhadap penggunaan barang dan fasilitas negara di sekolah adalah?", options: ["A. Merawat dan menggunakannya khusus untuk mendukung kegiatan pendidikan", "B. Bebas digunakan untuk keperluan bisnis pribadi", "C. Dipinjamkan ke pihak luar tanpa izin pimpinan", "D. Dibiarkan tanpa perawatan berkala"], correct: 0 }
+                ]
+            },
+            {
+                title: "Sektor 3: Pencegahan Gratifikasi, Pungli, & Benturan Kepentingan",
+                questions: [
+                    { q: "Seorang wali murid memberikan cenderamata berharga mahal kepada petugas loket pendaftaran sekolah. Tindakan berintegritas?", options: ["A. Menolak secara santun dan menjelaskan regulasi larangan gratifikasi", "B. Menerima dengan senang hati sebagai ungkapan terima kasih", "C. Menerima lalu membagikannya ke rekan staf lain", "D. Meminta hadiah bertambah"], correct: 0 },
+                    { q: "Mengadakan iuran wajib tambahan di luar ketentuan resmi tanpa persetujuan komite dan dinas termasuk tindakan?", options: ["A. Pungutan Liar (Pungli) yang melanggar aturan kependidikan", "B. Inovasi pendanaan yang dianjurkan", "C. Kerjasama sukarela antar warga sekolah", "D. Inisiatif mandiri instansi"], correct: 0 },
+                    { q: "Apa yang dimaksud dengan benturan kepentingan (conflict of interest) bagi praktisi kependidikan?", options: ["A. Situasi di mana kepentingan pribadi memengaruhi objektifitas keputusan profesional", "B. Perbedaan pendapat saat rapat dewan sekolah", "C. Persaingan antar sekolah dalam meraih prestasi", "D. Kebijakan baru dari dinas pendidikan"], correct: 0 },
+                    { q: "Jika seorang praktisi kependidikan menerima pemberian yang meragukan apakah gratifikasi atau bukan, langkah terbaik adalah?", options: ["A. Melaporkan ke Unit Pengendalian Gratifikasi (UPG) atau atasan langsung", "B. Menyimpan pemberian tersebut tanpa melapor", "C. Menjual pemberian tersebut untuk kas sekolah", "D. Acuh tak acuh dan mengabaikannya"], correct: 0 },
+                    { q: "Dampak utama dari pencegahan pungli dan gratifikasi di ekosistem sekolah adalah?", options: ["A. Terciptanya keadilan layanan, kepercayaan publik, dan marwah pendidikan yang bersih", "B. Menurunkan motivasi kerja praktisi pendidikan", "C. Menyulitkan hubungan kerja sama dengan masyarakat", "D. Membatasi kemajuan sekolah"], correct: 0 }
+                ]
+            },
+            {
+                title: "Sektor 4: Akuntabilitas Kinerja & Tata Kelola Digital Kependidikan",
+                questions: [
+                    { q: "Dalam penginputan data pokok pendidikan (Data Digital / Dapodik), operator dan praktisi sekolah wajib?", options: ["A. Menginput data secara akurat, valid, dan sesuai dokumen otentik", "B. Mengubah jumlah siswa agar alokasi bantuan bertambah", "C. Mengisi data secara acak yang penting cepat selesai", "D. Membiarkan data kedaluwarsa"], correct: 0 },
+                    { q: "Sikap praktisi kependidikan terhadap kerahasiaan kata sandi (password) akun sistem informasi sekolah?", options: ["A. Menjaga kerahasiaan akun dan tidak membagikannya ke pihak yang tidak berwenang", "B. Menuliskan kata sandi di papan pengumuman umum", "C. Membagikan kata sandi ke siapa saja yang meminta", "D. Menggunakan kata sandi sederhana yang mudah ditebak"], correct: 0 },
+                    { q: "Bagaimana kedisiplinan pengisian daftar hadir elektronik (e-presensi) praktisi kependidikan yang berintegritas?", options: ["A. Melakukan rekam kehadiran sesuai jam kerja nyata tanpa rekayasa lokasi", "B. Titip presensi kepada rekan kerja saat tidak hadir", "C. Menggunakan aplikasi pemalsu lokasi (Fake GPS)", "D. Mengisi presensi kehadiran secara kumulatif di akhir bulan"], correct: 0 },
+                    { q: "Dalam memanfaatkan media sosial milik sekolah, praktisi kependidikan wajib?", options: ["A. Menjaga etika komunikasi, kebenaran informasi, dan privasi warga sekolah", "B. Mengunggah informasi hoaks atau narasi provokatif", "C. Menyebarkan data pribadi siswa tanpa izin orang tua", "D. Membalas komentar publik dengan kalimat tidak sopan"], correct: 0 },
+                    { q: "Penggunaan perangkat lunak (software) dan materi digital di lingkungan sekolah hendaknya?", options: ["A. Menggunakan lisensi resmi atau materi open-source yang sah", "B. Mengunduh program bajakan secara ilegal", "C. Mengabaikan hak cipta pembuat karya", "D. Meretas jaringan sekolah lain"], correct: 0 }
+                ]
+            },
+            {
+                title: "Sektor 5: Lingkungan Pendidikan Aman, Inklusif, & Berbudaya Anti-Korupsi",
+                questions: [
+                    { q: "Ketika praktisi kependidikan mendapati dugaan tindakan perundungan (bullying) di sekolah, langkah tepat adalah?", options: ["A. Segera merespons, melindungi korban, dan menangani sesuai prosedur aman", "B. Menganggap hal tersebut lelucon antar remaja biasa", "C. Menyalahkan korban perundungan", "D. Membiarkan siswa menyelesaikan sendiri"], correct: 0 },
+                    { q: "Prinsip keadilan dan inklusivitas dalam pelayanan kependidikan berarti?", options: ["A. Melayani seluruh peserta didik dan warga sekolah tanpa diskriminasi", "B. Hanya memberikan layanan terbaik bagi golongan tertentu", "C. Membeda-bedakan kualitas layanan berdasarkan status sosial ekonomi", "D. Mengutamakan keluarga dekat saja"], correct: 0 },
+                    { q: "Peran utama praktisi kependidikan dalam menciptakan budaya anti-korupsi di sekolah adalah?", options: ["A. Menjadi teladan integritas, bersikap transparan, dan menerapkan nilai kejujuran", "B. Sekadar menyelesaikan jam kerja tanpa peduli lingkungan", "C. Membiarkan penyimpangan kecil terjadi", "D. Menghindari keterlibatan dalam kegiatan pengembangan sekolah"], correct: 0 },
+                    { q: "Penerapan disiplin positif di lingkungan sekolah diwujudkan melalui?", options: ["A. Pembinaan yang membangun kesadaran diri tanpa kekerasan fisik dan verbal", "B. Pemberian hukuman fisik yang berat", "C. Ancaman berlebihan kepada peserta didik", "D. Pembiaran tanpa aturan dan pengawasan"], correct: 0 },
+                    { q: "Visi utama gerakan SIGMA bagi seluruh praktisi pendidikan di Kabupaten Majalengka adalah?", options: ["A. Membangun ekosistem kependidikan yang jujur, profesional, akuntabel, dan bebas korupsi", "B. Sekadar pemenuhan tugas rutin tahunan", "C. Perlombaan meraih nilai tertinggi semata", "D. Kegiatan hiburan tanpa makna"], correct: 0 }
+                ]
+            }
+        ];
+
+        window.onload = function () {
+            initEngine();
+            setupEventListeners();
+            setupTouchControls();
+        };
+
+        function initEngine() {
+            const canvas = document.getElementById('game-canvas');
+            
+            // 1. Scene & Space Deep Fog
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712); // Deep Space Black
+            scene.fog = new THREE.FogExp2(0x030712, 0.005);
+
+            // 2. Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 6, 12);
+
+            // 3. Renderer Transparan & Glow Effect Setup
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // 4. Lighting Kosmis Futuristik (Cyan & Violet Lights)
+            const ambientLight = new THREE.AmbientLight(0x1e293b, 1.2);
+            scene.add(ambientLight);
+
+            const cyanLight = new THREE.DirectionalLight(0x22d3ee, 1.5);
+            cyanLight.position.set(20, 40, 20);
+            scene.add(cyanLight);
+
+            const purpleLight = new THREE.DirectionalLight(0xa855f7, 1.2);
+            purpleLight.position.set(-20, 20, -20);
+            scene.add(purpleLight);
+
+            createSpaceStarfield();
+
+            createSpaceHologramTrack();
+
+            createRobloxSpaceCharacter();
+
+            createHologramIntegrityGates();
+
+            // Start Animation Loop
+            animate();
+        }
+
+        function createSpaceStarfield() {
+            // Particle Stars Field Background
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 1500;
+            const positions = new Float32Array(starCount * 3);
+
+            for (let i = 0; i < starCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 600;
+                positions[i + 1] = (Math.random() - 0.5) * 400;
+                positions[i + 2] = -Math.random() * 1700;
+            }
+
+            starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const starMat = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.8, transparent: true, opacity: 0.8 });
+            const starPoints = new THREE.Points(starGeo, starMat);
+            scene.add(starPoints);
+
+            // Floating Holographic Nebula Clouds
+            for (let i = 0; i < 20; i++) {
+                const cloudGeo = new THREE.BoxGeometry(15 + Math.random() * 20, 4 + Math.random() * 6, 15 + Math.random() * 20);
+                const cloudMat = new THREE.MeshBasicMaterial({
+                    color: Math.random() > 0.5 ? 0x0284c7 : 0x7e22ce,
+                    transparent: true,
+                    opacity: 0.12,
+                    wireframe: true
+                });
+                const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+                cloud.position.set(
+                    (Math.random() - 0.5) * 160,
+                    15 + Math.random() * 20,
+                    -Math.random() * 1600
+                );
+                scene.add(cloud);
+                nebulaClouds.push({ mesh: cloud, rotSpeed: 0.002 + Math.random() * 0.003 });
+            }
+        }
+
+        function createSpaceHologramTrack() {
+            const trackWidth = 10;
+            const totalLength = 1600;
+            const tileLength = 12;
+
+            // Semi-Transparent Hologram Path Glass Platform
+            for (let z = 0; z > -totalLength; z -= tileLength) {
+                const tileGeo = new THREE.BoxGeometry(trackWidth, 0.3, tileLength - 0.4);
+                
+                // Material Transparan Hologram Kaca
+                const tileMat = new THREE.MeshPhysicalMaterial({
+                    color: 0x0e7490,
+                    transparent: true,
+                    opacity: 0.35,
+                    transmission: 0.6,
+                    roughness: 0.1,
+                    metalness: 0.1,
+                    clearcoat: 1.0,
+                    reflectivity: 0.9,
+                    side: THREE.DoubleSide
+                });
+
+                const tile = new THREE.Mesh(tileGeo, tileMat);
+                tile.position.set(0, 0, z - tileLength / 2);
+                scene.add(tile);
+
+                // Neon Edges Borders Transparan (Cyan / Purple Glow)
+                const edgeGeo = new THREE.EdgesGeometry(tileGeo);
+                const edgeMat = new THREE.LineBasicMaterial({
+                    color: (Math.abs(z / tileLength) % 2 === 0) ? 0x22d3ee : 0xa855f7,
+                    linewidth: 2,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const lineBorders = new THREE.LineSegments(edgeGeo, edgeMat);
+                tile.add(lineBorders);
+            }
+
+            // Decorative Floating Space Orbs along the path
+            for (let z = -15; z > -1550; z -= 25) {
+                createSpaceFloatingOrb(-8, 2, z);
+                createSpaceFloatingOrb(8, 2, z);
+            }
+        }
+
+        function createSpaceFloatingOrb(x, y, z) {
+            const group = new THREE.Group();
+            
+            // Outer Hologram Ring
+            const ringGeo = new THREE.TorusGeometry(1.2, 0.08, 8, 24);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.6 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            group.add(ring);
+
+            // Inner Floating Crystal
+            const crystalGeo = new THREE.OctahedronGeometry(0.7);
+            const crystalMat = new THREE.MeshStandardMaterial({ color: 0xa855f7, transparent: true, opacity: 0.7, roughness: 0.2 });
+            const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+            group.add(crystal);
+
+            group.position.set(x, y, z);
+            scene.add(group);
+            starsBg.push({ group: group, crystal: crystal, ring: ring });
+        }
+
+        function createRobloxSpaceCharacter() {
+            playerGroup = new THREE.Group();
+
+            // --- ROBLOX R6 SPACE SUIT AVATAR ---
+
+            // 1. Head & Roblox Stud (Futuristic Glass Helmet Accent)
+            const headGroup = new THREE.Group();
+            headGroup.position.set(0, 1.65, 0);
+
+            const headGeo = new THREE.BoxGeometry(0.75, 0.75, 0.75);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2 });
+            const headMesh = new THREE.Mesh(headGeo, headMat);
+            headGroup.add(headMesh);
+
+            // Visor Transparan Space
+            const visorGeo = new THREE.BoxGeometry(0.77, 0.35, 0.38);
+            const visorMat = new THREE.MeshPhysicalMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.8, roughness: 0.1 });
+            const visor = new THREE.Mesh(visorGeo, visorMat);
+            visor.position.set(0, 0.05, 0.2);
+            headGroup.add(visor);
+
+            // Stud Top
+            const studGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.12, 16);
+            const studMesh = new THREE.Mesh(studGeo, headMat);
+            studMesh.position.set(0, 0.43, 0);
+            headGroup.add(studMesh);
+
+            playerGroup.add(headGroup);
+
+            // 2. Torso (Transparan Cyber Suit)
+            const torsoGeo = new THREE.BoxGeometry(0.9, 1.0, 0.5);
+            const torsoMat = new THREE.MeshPhysicalMaterial({ color: 0x0f172a, transparent: true, opacity: 0.85, roughness: 0.3, metalness: 0.5 });
+            const torsoMesh = new THREE.Mesh(torsoGeo, torsoMat);
+            torsoMesh.position.set(0, 0.9, 0);
+            playerGroup.add(torsoMesh);
+
+            // Neon Core Badge Center
+            const coreGeo = new THREE.OctahedronGeometry(0.2);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            core.position.set(0, 0.9, 0.27);
+            playerGroup.add(core);
+
+            // 3. Left Arm
+            leftArmGroup = new THREE.Group();
+            leftArmGroup.position.set(-0.68, 1.35, 0);
+            const armGeo = new THREE.BoxGeometry(0.4, 1.0, 0.4);
+            const armMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
+            const leftArmMesh = new THREE.Mesh(armGeo, armMat);
+            leftArmMesh.position.set(0, -0.45, 0);
+            leftArmGroup.add(leftArmMesh);
+            playerGroup.add(leftArmGroup);
+
+            // 4. Right Arm
+            rightArmGroup = new THREE.Group();
+            rightArmGroup.position.set(0.68, 1.35, 0);
+            const rightArmMesh = new THREE.Mesh(armGeo, armMat);
+            rightArmMesh.position.set(0, -0.45, 0);
+            rightArmGroup.add(rightArmMesh);
+            playerGroup.add(rightArmGroup);
+
+            // 5. Left Leg
+            leftLegGroup = new THREE.Group();
+            leftLegGroup.position.set(-0.24, 0.45, 0);
+            const legGeo = new THREE.BoxGeometry(0.42, 0.9, 0.42);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+            const leftLegMesh = new THREE.Mesh(legGeo, legMat);
+            leftLegMesh.position.set(0, -0.4, 0);
+            leftLegGroup.add(leftLegMesh);
+            playerGroup.add(leftLegGroup);
+
+            // 6. Right Leg
+            rightLegGroup = new THREE.Group();
+            rightLegGroup.position.set(0.24, 0.45, 0);
+            const rightLegMesh = new THREE.Mesh(legGeo, legMat);
+            rightLegMesh.position.set(0, -0.4, 0);
+            rightLegGroup.add(rightLegMesh);
+            playerGroup.add(rightLegGroup);
+
+            playerGroup.position.set(0, 0, 0);
+            scene.add(playerGroup);
+        }
+
+        function createHologramIntegrityGates() {
+            gates = [];
+            let gateCount = 0;
+            const gateSpacing = 30;
+
+            zonesData.forEach((zone, zIdx) => {
+                zone.questions.forEach((qObj, qIdx) => {
+                    gateCount++;
+                    const zPos = -gateCount * gateSpacing;
+
+                    const gateGroup = new THREE.Group();
+
+                    // Space Gate Frame (Hologram Pillar Frame)
+                    const pillarGeo = new THREE.BoxGeometry(0.6, 5.5, 0.6);
+                    const pillarMat = new THREE.MeshPhysicalMaterial({ color: 0x0284c7, transparent: true, opacity: 0.6, roughness: 0.2 });
+                    
+                    const leftPillar = new THREE.Mesh(pillarGeo, pillarMat);
+                    leftPillar.position.set(-4.2, 2.75, 0);
+                    gateGroup.add(leftPillar);
+
+                    const rightPillar = new THREE.Mesh(pillarGeo, pillarMat);
+                    rightPillar.position.set(4.2, 2.75, 0);
+                    gateGroup.add(rightPillar);
+
+                    // Top Hologram Arch
+                    const archGeo = new THREE.BoxGeometry(9.4, 0.8, 0.8);
+                    const archMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2 });
+                    const arch = new THREE.Mesh(archGeo, archMat);
+                    arch.position.set(0, 5.2, 0);
+                    gateGroup.add(arch);
+
+                    // Pintu Tertutup (Double Hologram Sliding Doors)
+                    const doorGeo = new THREE.BoxGeometry(3.8, 4.8, 0.2);
+                    const doorMat = new THREE.MeshPhysicalMaterial({
+                        color: 0xef4444,
+                        emissive: 0x991b1b,
+                        emissiveIntensity: 0.4,
+                        transparent: true,
+                        opacity: 0.8,
+                        roughness: 0.2,
+                        metalness: 0.7
+                    });
+
+                    const leftDoor = new THREE.Mesh(doorGeo, doorMat.clone());
+                    leftDoor.position.set(-2.0, 2.5, 0);
+                    gateGroup.add(leftDoor);
+
+                    const rightDoor = new THREE.Mesh(doorGeo, doorMat.clone());
+                    rightDoor.position.set(2.0, 2.5, 0);
+                    gateGroup.add(rightDoor);
+
+                    // Energy Shield Barrier Behind Door
+                    const shieldGeo = new THREE.PlaneGeometry(8, 4.8);
+                    const shieldMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.25, side: THREE.DoubleSide });
+                    const shield = new THREE.Mesh(shieldGeo, shieldMat);
+                    shield.position.set(0, 2.5, -0.1);
+                    gateGroup.add(shield);
+
+                    // Floating Star Octahedron Icon
+                    const starGeo = new THREE.OctahedronGeometry(0.8, 0);
+                    const starMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.8 });
+                    const star = new THREE.Mesh(starGeo, starMat);
+                    star.position.set(0, 2.8, 0.2);
+                    gateGroup.add(star);
+
+                    gateGroup.position.set(0, 0, zPos);
+                    scene.add(gateGroup);
+
+                    gates.push({
+                        group: gateGroup,
+                        leftDoor: leftDoor,
+                        rightDoor: rightDoor,
+                        starMesh: star,
+                        shieldMesh: shield,
+                        zPos: zPos,
+                        zoneIndex: zIdx,
+                        questionData: qObj,
+                        isAnswered: false,
+                        isOpen: false
+                    });
+                });
+            });
+        }
+
+        function setupEventListeners() {
+            window.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.code) || keys.hasOwnProperty(e.key)) {
+                    keys[e.code] = true;
+                    keys[e.key] = true;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (keys.hasOwnProperty(e.code) || keys.hasOwnProperty(e.key)) {
+                    keys[e.code] = false;
+                    keys[e.key] = false;
+                }
+            });
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setupTouchControls() {
+            const container = document.getElementById('joystick-container');
+            const knob = document.getElementById('joystick-knob');
+
+            let touchId = null;
+            let startX = 0, startY = 0;
+
+            container.addEventListener('touchstart', (e) => {
+                if (!isGameStarted || isPaused) return;
+                const touch = e.changedTouches[0];
+                touchId = touch.identifier;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                isTouchActive = true;
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (!isTouchActive) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === touchId) {
+                        const touch = e.changedTouches[i];
+                        const deltaX = touch.clientX - startX;
+                        const deltaY = touch.clientY - startY;
+
+                        const dist = Math.min(Math.hypot(deltaX, deltaY), 45);
+                        const angle = Math.atan2(deltaY, deltaX);
+
+                        const moveX = Math.cos(angle) * dist;
+                        const moveY = Math.sin(angle) * dist;
+
+                        knob.style.transform = `translate(${moveX}px, ${moveY}px)`;
+
+                        touchInput.x = moveX / 45;
+                        touchInput.y = moveY / 45;
+                    }
+                }
+            });
+
+            const endTouch = () => {
+                isTouchActive = false;
+                touchInput.x = 0;
+                touchInput.y = 0;
+                knob.style.transform = 'translate(0px, 0px)';
+            };
+
+            container.addEventListener('touchend', endTouch);
+            container.addEventListener('touchcancel', endTouch);
+        }
+
+        function triggerMobileAction() {
+            if (playerGroup && isGameStarted && !isPaused) {
+                playerGroup.position.z -= 2.0;
+            }
+        }
+
+        function updatePlayerMovement() {
+            if (!isGameStarted || isPaused || !playerGroup) return;
+
+            let dx = 0;
+            let dz = 0;
+
+            if (keys.W || keys.ArrowUp || keys.KeyW) dz -= moveSpeed;
+            if (keys.S || keys.ArrowDown || keys.KeyS) dz += moveSpeed * 0.5;
+            if (keys.A || keys.ArrowLeft || keys.KeyA) dx -= moveSpeed;
+            if (keys.D || keys.ArrowRight || keys.KeyD) dx += moveSpeed;
+
+            if (isTouchActive) {
+                dx += touchInput.x * moveSpeed;
+                dz += touchInput.y * moveSpeed;
+            }
+
+            playerGroup.position.x += dx;
+            playerGroup.position.z += dz;
+
+            // Restrict on track width
+            playerGroup.position.x = Math.max(-4.2, Math.min(4.2, playerGroup.position.x));
+
+            // Physical Barrier Collision: Prevent passing through locked/closed doors
+            gates.forEach((gate) => {
+                if (!gate.isOpen) {
+                    if (playerGroup.position.z <= gate.zPos + 1.2 && playerGroup.position.z >= gate.zPos - 1.5) {
+                        playerGroup.position.z = gate.zPos + 1.2;
+                    }
+                }
+            });
+
+            const isMoving = (Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01);
+            if (isMoving) {
+                const targetAngle = Math.atan2(dx, dz);
+                playerGroup.rotation.y = targetAngle;
+
+                // Roblox R6 Swing
+                walkTime += 0.28;
+                const swing = Math.sin(walkTime) * 0.75;
+                if (leftArmGroup) leftArmGroup.rotation.x = swing;
+                if (rightArmGroup) rightArmGroup.rotation.x = -swing;
+                if (leftLegGroup) leftLegGroup.rotation.x = -swing;
+                if (rightLegGroup) rightLegGroup.rotation.x = swing;
+            } else {
+                if (leftArmGroup) leftArmGroup.rotation.x = THREE.MathUtils.lerp(leftArmGroup.rotation.x, 0, 0.2);
+                if (rightArmGroup) rightArmGroup.rotation.x = THREE.MathUtils.lerp(rightArmGroup.rotation.x, 0, 0.2);
+                if (leftLegGroup) leftLegGroup.rotation.x = THREE.MathUtils.lerp(leftLegGroup.rotation.x, 0, 0.2);
+                if (rightLegGroup) rightLegGroup.rotation.x = THREE.MathUtils.lerp(rightLegGroup.rotation.x, 0, 0.2);
+            }
+
+            // Camera Smooth Space Follow
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, playerGroup.position.x, 0.1);
+            camera.position.z = THREE.MathUtils.lerp(camera.position.z, playerGroup.position.z + 8.5, 0.1);
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y, playerGroup.position.y + 4.5, 0.1);
+            camera.lookAt(playerGroup.position.x, playerGroup.position.y + 1.2, playerGroup.position.z - 4);
+
+            checkGateCollisions();
+        }
+
+        function checkGateCollisions() {
+            const pZ = playerGroup.position.z;
+
+            gates.forEach((gate, idx) => {
+                if (!gate.isAnswered && !gate.isOpen && Math.abs(pZ - (gate.zPos + 2.0)) < 1.5) {
+                    gate.isAnswered = true;
+                    activeGateIndex = idx;
+                    activeGateRef = gate;
+                    openQuizModal(gate);
+                }
+            });
+        }
+
+        function openQuizModal(gate) {
+            isPaused = true;
+            activeGateRef = gate;
+            
+            document.getElementById('minimized-quiz-pill').classList.add('hidden');
+
+            currentZoneIndex = gate.zoneIndex;
+            document.getElementById('zone-text').innerText = `${currentZoneIndex + 1} / 5`;
+            document.getElementById('quiz-zone-badge').innerText = zonesData[gate.zoneIndex].title;
+
+            const qData = gate.questionData;
+            document.getElementById('quiz-question').innerText = qData.q;
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            document.getElementById('quiz-feedback').className = 'hidden p-4 rounded-2xl text-center text-sm font-bold backdrop-blur-md';
+
+            // Clean prefixes 'A. ', 'B. ', and shuffle options randomly
+            const rawOptions = qData.options.map(opt => opt.replace(/^[A-D]\.\s*/, ''));
+            const correctAnswerText = rawOptions[qData.correct];
+            
+            const shuffled = rawOptions.map(opt => ({ text: opt, isCorrect: opt === correctAnswerText }));
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            const prefixes = ['A. ', 'B. ', 'C. ', 'D. '];
+            let newCorrectIndex = 0;
+
+            shuffled.forEach((optObj, optIdx) => {
+                if (optObj.isCorrect) {
+                    newCorrectIndex = optIdx;
+                }
+                const formattedText = (prefixes[optIdx] || '') + optObj.text;
+
+                const btn = document.createElement('button');
+                btn.className = 'neon-btn w-full text-left p-4 rounded-2xl text-xs sm:text-sm text-cyan-100 font-semibold transition flex items-center justify-between';
+                btn.innerText = formattedText;
+                btn.onclick = () => submitAnswer(optIdx, newCorrectIndex, gate);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('quiz-modal').classList.remove('hidden');
+        }
+
+        function closeQuizModal() {
+            if (activeGateRef && !activeGateRef.isOpen) {
+                activeGateRef.isAnswered = false;
+            }
+            if (playerGroup) {
+                playerGroup.position.z += 2.5;
+            }
+
+            document.getElementById('quiz-modal').classList.add('hidden');
+            document.getElementById('minimized-quiz-pill').classList.add('hidden');
+            isPaused = false;
+        }
+
+        function submitAnswer(selectedIndex, correctIndex, gate) {
+            const feedbackEl = document.getElementById('quiz-feedback');
+            const optionsContainer = document.getElementById('quiz-options');
+            const selectedBtn = optionsContainer.children[selectedIndex];
+
+            if (selectedIndex === correctIndex) {
+                // Jawaban Benar: Buka pintu & beri poin
+                gate.isOpen = true;
+
+                // Nonaktifkan semua pilihan jawaban
+                Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+
+                score += 20;
+                document.getElementById('score-text').innerText = score;
+                playSynthSound(587.33, 'sine', 0.3);
+
+                feedbackEl.innerText = "✨ Jawaban Tepat & Berintegritas! Pintu Terbuka (+20 Poin)";
+                feedbackEl.className = 'p-4 rounded-2xl text-center text-sm font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-400/50 backdrop-blur-md';
+
+                gate.leftDoor.material.color.setHex(0x22c55e);
+                gate.leftDoor.material.emissive.setHex(0x15803d);
+                gate.rightDoor.material.color.setHex(0x22c55e);
+                gate.rightDoor.material.emissive.setHex(0x15803d);
+                gate.starMesh.material.color.setHex(0x22c55e);
+                gate.starMesh.material.emissive.setHex(0x16a34a);
+                gate.shieldMesh.material.color.setHex(0x22c55e);
+
+                feedbackEl.classList.remove('hidden');
+
+                setTimeout(() => {
+                    document.getElementById('quiz-modal').classList.add('hidden');
+                    document.getElementById('minimized-quiz-pill').classList.add('hidden');
+                    isPaused = false;
+                }, 1800);
+            } else {
+                // Jawaban Salah: Pintu tetap terkunci, tandai pilihan yang salah, biarkan memilih lagi
+                playSynthSound(220, 'sawtooth', 0.4);
+
+                // Nonaktifkan tombol yang salah dipilih
+                selectedBtn.disabled = true;
+                selectedBtn.classList.remove('neon-btn', 'text-cyan-100');
+                selectedBtn.classList.add('bg-rose-950/80', 'border', 'border-rose-500/80', 'text-rose-300', 'opacity-60', 'cursor-not-allowed');
+
+                feedbackEl.innerText = "❌ Jawaban Kurang Tepat! Pintu masih terkunci, silakan pilih jawaban lain.";
+                feedbackEl.className = 'p-4 rounded-2xl text-center text-sm font-bold bg-rose-950/80 text-rose-300 border border-rose-500/50 backdrop-blur-md';
+                feedbackEl.classList.remove('hidden');
+            }
+        }
+
+        function initAudioEngine() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSynthBGM() {
+            if (!isAudioPlaying || customAudioElement) return;
+
+            initAudioEngine();
+            const notes = [293.66, 349.23, 440.00, 523.25];
+            let noteIdx = 0;
+
+            bgmOscillatorInterval = setInterval(() => {
+                if (!isAudioPlaying || customAudioElement) return;
+                playSynthSound(notes[noteIdx], 'sine', 0.25, 0.1);
+                noteIdx = (noteIdx + 1) % notes.length;
+            }, 320);
+        }
+
+        function playSynthSound(freq, type = 'sine', duration = 0.2, vol = 0.2) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function handleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                if (customAudioElement) {
+                    customAudioElement.pause();
+                }
+                customAudioElement = new Audio(fileURL);
+                customAudioElement.loop = true;
+                if (isAudioPlaying) {
+                    clearInterval(bgmOscillatorInterval);
+                    customAudioElement.play();
+                }
+            }
+        }
+
+        function toggleAudio() {
+            isAudioPlaying = !isAudioPlaying;
+            const iconEl = document.getElementById('audio-icon');
+
+            if (isAudioPlaying) {
+                iconEl.innerText = '🔊';
+                if (customAudioElement) {
+                    customAudioElement.play();
+                } else {
+                    playSynthBGM();
+                }
+            } else {
+                iconEl.innerText = '🔇';
+                if (customAudioElement) {
+                    customAudioElement.pause();
+                }
+                if (bgmOscillatorInterval) {
+                    clearInterval(bgmOscillatorInterval);
+                }
+            }
+        }
+
+        function startGame() {
+            initAudioEngine();
+            isGameStarted = true;
+            isPaused = false;
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('hud-panel').classList.remove('hidden');
+
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                document.getElementById('joystick-container').classList.remove('hidden');
+                document.getElementById('mobile-action-btn').classList.remove('hidden');
+            }
+
+            isAudioPlaying = true;
+            if (customAudioElement) {
+                customAudioElement.play();
+            } else {
+                playSynthBGM();
+            }
+        }
+
+        function confirmExit() {
+            isPaused = true;
+            document.getElementById('exit-modal').classList.remove('hidden');
+        }
+
+        function closeExitModal() {
+            document.getElementById('exit-modal').classList.add('hidden');
+            isPaused = false;
+        }
+
+        function executeExit() {
+            isGameStarted = false;
+            isPaused = false;
+            score = 0;
+            currentZoneIndex = 0;
+
+            document.getElementById('score-text').innerText = '0';
+            document.getElementById('zone-text').innerText = '1 / 5';
+
+            if (playerGroup) {
+                playerGroup.position.set(0, 0, 0);
+            }
+
+            gates.forEach(g => {
+                g.isAnswered = false;
+                g.isOpen = false;
+                g.leftDoor.position.x = -2.0;
+                g.rightDoor.position.x = 2.0;
+                g.leftDoor.material.color.setHex(0xef4444);
+                g.leftDoor.material.emissive.setHex(0x991b1b);
+                g.rightDoor.material.color.setHex(0xef4444);
+                g.rightDoor.material.emissive.setHex(0x991b1b);
+                g.starMesh.material.color.setHex(0xf43f5e);
+                g.starMesh.material.emissive.setHex(0xe11d48);
+                g.shieldMesh.material.color.setHex(0xef4444);
+                g.shieldMesh.material.opacity = 0.25;
+            });
+
+            if (isAudioPlaying) {
+                toggleAudio();
+            }
+
+            document.getElementById('exit-modal').classList.add('hidden');
+            document.getElementById('quiz-modal').classList.add('hidden');
+            document.getElementById('minimized-quiz-pill').classList.add('hidden');
+            document.getElementById('hud-panel').classList.add('hidden');
+            document.getElementById('joystick-container').classList.add('hidden');
+            document.getElementById('mobile-action-btn').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate Stars & Animate Gate Doors opening smoothly
+            gates.forEach(gate => {
+                if (gate.starMesh) {
+                    gate.starMesh.rotation.y += 0.03;
+                    gate.starMesh.rotation.x += 0.01;
+                }
+
+                if (gate.isOpen) {
+                    // Slide doors outward to open
+                    gate.leftDoor.position.x = THREE.MathUtils.lerp(gate.leftDoor.position.x, -5.5, 0.08);
+                    gate.rightDoor.position.x = THREE.MathUtils.lerp(gate.rightDoor.position.x, 5.5, 0.08);
+                    gate.shieldMesh.material.opacity = THREE.MathUtils.lerp(gate.shieldMesh.material.opacity, 0.03, 0.08);
+                } else {
+                    // Lock doors in center position
+                    gate.leftDoor.position.x = THREE.MathUtils.lerp(gate.leftDoor.position.x, -2.0, 0.08);
+                    gate.rightDoor.position.x = THREE.MathUtils.lerp(gate.rightDoor.position.x, 2.0, 0.08);
+                    gate.shieldMesh.material.opacity = THREE.MathUtils.lerp(gate.shieldMesh.material.opacity, 0.25, 0.08);
+                }
+            });
+
+            starsBg.forEach(orb => {
+                if (orb.crystal) orb.crystal.rotation.y += 0.02;
+                if (orb.ring) orb.ring.rotation.z += 0.01;
+            });
+
+            nebulaClouds.forEach(c => {
+                if (c.mesh) c.mesh.rotation.y += c.rotSpeed;
+            });
+
+            updatePlayerMovement();
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+    </script>
+</body>
+</html>
